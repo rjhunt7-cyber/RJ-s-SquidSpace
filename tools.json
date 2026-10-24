@@ -1,0 +1,14 @@
+{
+  "tools": [
+    {
+      "id": "partsmith",
+      "title": "Partsmith",
+      "path": "tools/partsmith.html",
+      "kind": "file",
+      "added": "2026-10-24T14:16:10.908Z",
+      "thumbnail": "tools/partsmith.jpg?v=mvmhez88"
+    }
+  ],
+  "count": 1,
+  "updated": "2026-10-24T14:16:10.908Z"
+}
