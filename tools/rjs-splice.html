@@ -228,6 +228,9 @@ fieldset:disabled .opt{opacity:.45;cursor:default}
 body.exporting .left,body.exporting .right,body.exporting .toolbar,body.exporting .tl,body.exporting .top,body.exporting .transport{pointer-events:none;opacity:.55}
 body.exporting #ov{pointer-events:none}
 .vprev{width:100%;max-height:60vh;background:#000;border-radius:8px;display:block}
+
+.roomy{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);z-index:95;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;width:min(340px,92vw);box-shadow:0 18px 50px rgba(0,0,0,.45)}
+.roomy b{display:block;font:800 18px "Bricolage Grotesque",sans-serif;margin-bottom:4px}.roomy span{display:block;color:var(--ink2);margin-bottom:12px}.roomy .row-btns{margin:0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -741,6 +744,46 @@ function fitApp(){
   document.body.appendChild(p);RZ=p.getBoundingClientRect().width/100||1;p.remove();
 }
 addEventListener('resize',fitApp);
+
+/* When RJ's Splice is shown inside a small box on a page (like the tool frame on RJ's Squid Space),
+   make that box big enough for a desktop editor. Works when the page and this file are on the same site. */
+let hostGrown=false;
+function growHostFrame(){
+  let fe=null,pw=null,pd=null;
+  try{fe=window.frameElement;pw=window.parent;if(!fe||!pw||pw===window)return false;pd=pw.document;}catch(e){return false;}
+  try{
+    const fs=pd.fullscreenElement||pd.webkitFullscreenElement;
+    if(fs&&(fs===fe||fs.contains(fe))){Object.assign(fe.style,{width:'100%',height:'100%',maxWidth:'none',maxHeight:'none',aspectRatio:'auto'});return true;}
+    const r=fe.getBoundingClientRect();
+    if(!hostGrown&&r.width>=1100&&r.height>=620)return true;
+    const top=r.top+(pw.scrollY||0);
+    const W=Math.round(Math.max(320,Math.min(pw.innerWidth-48,1800)));
+    const H=Math.round(Math.max(560,pw.innerHeight-top-110));
+    Object.assign(fe.style,{width:W+'px',height:H+'px',maxWidth:'none',maxHeight:'none',minWidth:'0',aspectRatio:'auto',display:'block'});
+    let el=fe.parentElement,n=0;
+    while(el&&el!==pd.body&&el!==pd.documentElement&&n<5){
+      const b=el.getBoundingClientRect();
+      if(b.width<W||b.height<H){el.style.maxWidth='none';el.style.maxHeight='none';el.style.aspectRatio='auto';if(b.width<W)el.style.width='auto';if(b.height<H)el.style.height='auto';}
+      el=el.parentElement;n++;
+    }
+    if(!hostGrown){hostGrown=true;pw.addEventListener('resize',growHostFrame);pd.addEventListener('fullscreenchange',()=>setTimeout(growHostFrame,30));pd.addEventListener('webkitfullscreenchange',()=>setTimeout(growHostFrame,30));}
+    return true;
+  }catch(e){return false;}
+}
+/* If the box is still too small (for example the page is on another site), offer a bigger view. */
+function smallFrameNotice(){
+  const inFrame=window.top!==window,k=parseFloat(document.documentElement.style.zoom)||1;let n=$('#roomy');
+  if(!inFrame||k>=.6||sessionStorageless.dismissed){n&&n.remove();return;}
+  if(!n){n=document.createElement('div');n.id='roomy';n.className='roomy';
+    n.innerHTML=`<b>This editor needs more room</b><span>The box it's in is too small to use comfortably.</span><div class="row-btns"><button class="btn primary" id="roomFull">${ic('expand')}Full screen</button>${/^(https?|file):/.test(location.href)?`<button class="btn" id="roomTab">Open in a new tab</button>`:''}<button class="btn" id="roomNo">Use it here anyway</button></div>`;
+    document.body.appendChild(n);
+    $('#roomFull').onclick=()=>{const d=document.documentElement;(d.requestFullscreen||d.webkitRequestFullscreen||(()=>{})).call(d);};
+    const t=$('#roomTab');if(t)t.onclick=()=>window.open(location.href,'_blank');
+    $('#roomNo').onclick=()=>{sessionStorageless.dismissed=true;n.remove();};}
+  n.style.zoom=String(1/k);
+}
+const sessionStorageless={dismissed:false};
+addEventListener('resize',smallFrameNotice);
 
 /* ============ stage sizing ============ */
 function projectSize(){const[a,b]=ASPECTS[S.aspect];const sh=S.res;let w,h;if(a>=b){h=sh;w=Math.round(sh*a/b/2)*2;}else{w=sh;h=Math.round(sh*b/a/2)*2;}return[w,h];}
@@ -1427,7 +1470,7 @@ new ResizeObserver(()=>{renderTimeline();}).observe(tl);
 addEventListener('beforeunload',e=>{if(S.clips.length||S.saved.length){e.preventDefault();e.returnValue='';}});
 $$('[data-ic]').forEach(el=>{el.outerHTML=ic(el.dataset.ic);});
 if(document.fonts)FONTS.forEach(([f])=>{try{document.fonts.load(`40px ${f}`);}catch(e){}});
-fitApp();applyCanvasSize(...projectSize());syncAspectSelect();$('#zoom').value=Math.round(Math.log(S.pps/4)/Math.log(125)*100);
+growHostFrame();fitApp();smallFrameNotice();applyCanvasSize(...projectSize());syncAspectSelect();$('#zoom').value=Math.round(Math.log(S.pps/4)/Math.log(125)*100);
 renderLeft();refresh();requestAnimationFrame(loop);
 </script>
 </body>
