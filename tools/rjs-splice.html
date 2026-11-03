@@ -24,7 +24,8 @@
 [hidden]{display:none!important}
 html,body{margin:0;height:100%}
 body{font:13px/1.45 "IBM Plex Sans",system-ui,sans-serif;background:var(--bg);color:var(--ink);
-  display:grid;grid-template-rows:52px minmax(0,1fr) 44px minmax(170px,34vh);overflow:hidden}
+  display:grid;grid-template-rows:52px minmax(0,1fr) 44px minmax(170px,34%);overflow:hidden}
+html{overflow:hidden}
 button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
@@ -227,14 +228,6 @@ fieldset:disabled .opt{opacity:.45;cursor:default}
 body.exporting .left,body.exporting .right,body.exporting .toolbar,body.exporting .tl,body.exporting .top,body.exporting .transport{pointer-events:none;opacity:.55}
 body.exporting #ov{pointer-events:none}
 .vprev{width:100%;max-height:60vh;background:#000;border-radius:8px;display:block}
-@media (max-width:1180px){.work{grid-template-columns:250px minmax(0,1fr) 260px}.left{grid-template-columns:58px minmax(0,1fr)}}
-@media (max-width:860px){
-  body{grid-template-rows:52px auto 44px 260px;overflow:auto;height:auto;min-height:100%}
-  .work{grid-template-columns:1fr}
-  .center{height:56vh}
-  .left,.right{max-height:360px;border:0;border-top:1px solid var(--line)}
-  .brand span{display:none}
-}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -735,12 +728,26 @@ function loop(ts){
 }
 </script>
 <script>
+/* ============ whole-app sizing ============ */
+/* Always use the full desktop layout. When the window or the frame it sits in is smaller
+   than the design size, shrink the whole app to fit instead of squishing it. */
+const DESIGN_W=1280,DESIGN_H=760;let RZ=1;
+function fitApp(){
+  const vw=document.documentElement.clientWidth||innerWidth,vh=innerHeight;
+  const k=clamp(Math.min(vw/DESIGN_W,vh/DESIGN_H),.4,1),root=document.documentElement.style,b=document.body.style;
+  if(k<1){root.zoom=k;const w=vw/k,h=vh/k;b.width=w+'px';b.height=h+'px';}
+  else{root.zoom='';b.width='';b.height='';}
+  const p=document.createElement('div');p.style.cssText='position:absolute;left:0;top:0;width:100px;height:1px;visibility:hidden';
+  document.body.appendChild(p);RZ=p.getBoundingClientRect().width/100||1;p.remove();
+}
+addEventListener('resize',fitApp);
+
 /* ============ stage sizing ============ */
 function projectSize(){const[a,b]=ASPECTS[S.aspect];const sh=S.res;let w,h;if(a>=b){h=sh;w=Math.round(sh*a/b/2)*2;}else{w=sh;h=Math.round(sh*b/a/2)*2;}return[w,h];}
 function applyCanvasSize(w,h){if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;ov.width=w;ov.height=h;}fitStage();}
 function fitStage(){
   const wrap=$('#stageWrap'),box=$('#stageBox');const r=wrap.getBoundingClientRect();
-  const aw=Math.max(50,r.width-32),ah=Math.max(50,r.height-32),k=Math.min(aw/cv.width,ah/cv.height);
+  const aw=Math.max(50,r.width/RZ-32),ah=Math.max(50,r.height/RZ-32),k=Math.min(aw/cv.width,ah/cv.height);
   box.style.width=Math.floor(cv.width*k)+'px';box.style.height=Math.floor(cv.height*k)+'px';ovK=1/k;
 }
 
@@ -847,7 +854,7 @@ function drawWave(g,c,m,x0,cw,H){
 
 /* ============ timeline interaction ============ */
 const tl=$('#tl');
-const timeAt=x=>(x-$('#tlInner').getBoundingClientRect().left-HEAD)/S.pps;
+const timeAt=x=>((x-$('#tlInner').getBoundingClientRect().left)/RZ-HEAD)/S.pps;
 function rowAt(y){
   const rows=$$('#tlInner .row.trk,#tlInner .row.dz');
   for(const r of rows){const b=r.getBoundingClientRect();if(y>=b.top&&y<b.bottom)return r.dataset.dz?{dz:r.dataset.dz}:{tid:r.dataset.tid};}
@@ -867,7 +874,7 @@ function startMove(e,c){
   const mv=ev=>{
     if(!moved&&Math.hypot(ev.clientX-x0,ev.clientY-y0)<4)return;
     if(!moved){moved=true;document.body.classList.add('dragging');}
-    c.start=snapMove(c,Math.max(0,o.start+(ev.clientX-x0)/S.pps));
+    c.start=snapMove(c,Math.max(0,o.start+(ev.clientX-x0)/RZ/S.pps));
     const ce=$(`.clip[data-cid="${c.id}"]`);if(ce)ce.style.left=c.start*S.pps+'px';
     $$('.row.hot').forEach(r=>r.classList.remove('hot'));target=rowAt(ev.clientY);
     if(target){
@@ -897,7 +904,7 @@ function startTrim(e,c,side){
   const nextStart=Math.min(Infinity,...same.filter(k=>k.start>=o.start+o.dur-1e-3).map(k=>k.start));
   const ce=$(`.clip[data-cid="${c.id}"]`),strip=ce&&ce.querySelector('.strip');
   const mv=ev=>{
-    moved=true;const d=(ev.clientX-x0)/S.pps;
+    moved=true;const d=(ev.clientX-x0)/RZ/S.pps;
     if(side==='l'){
       const minS=Math.max(prevEnd,lim===Infinity?0:o.start-o.in/c.speed);
       const ns=clamp(snapEdge(o.start+d,c),minS,o.start+o.dur-.1),delta=ns-o.start;
@@ -949,7 +956,7 @@ tl.addEventListener('drop',e=>{
 });
 function setZoom(pps,anchorX){
   const old=S.pps;S.pps=clamp(pps,4,500);const r=tl.getBoundingClientRect();
-  const ax=anchorX!=null?anchorX-r.left-HEAD:(S.time*old-tl.scrollLeft);
+  const ax=anchorX!=null?(anchorX-r.left)/RZ-HEAD:(S.time*old-tl.scrollLeft);
   const t=(tl.scrollLeft+ax)/old;renderTimeline();tl.scrollLeft=Math.max(0,t*S.pps-ax);drawRuler();
   $('#zoom').value=Math.round(Math.log(S.pps/4)/Math.log(125)*100);
 }
@@ -1049,7 +1056,7 @@ function showCtx(x,y,c){
   const items=[c.kind!=='effect'&&['save','Save clip','Ctrl+S',1],n>1&&c.kind!=='effect'&&['pieces',`Save all ${n} pieces on this track`,''],'-',['split','Split at playhead','S'],['dup','Duplicate','Ctrl+D'],
     c.kind==='video'&&['separate','Separate sound',''],c.kind==='video'&&['freeze','Freeze frame',''],'-',['del','Delete','Del'],['ripple','Delete and close the gap','Shift+Del']].filter(Boolean);
   m.innerHTML=items.map(i=>i==='-'?'<hr>':`<button data-cmd="${i[0]}" class="${i[3]?'hl':''}"><span>${esc(i[1])}</span><kbd>${i[2]}</kbd></button>`).join('');
-  m.hidden=false;const r=m.getBoundingClientRect();m.style.left=Math.min(x,innerWidth-r.width-8)+'px';m.style.top=Math.min(y,innerHeight-r.height-8)+'px';
+  m.hidden=false;const r=m.getBoundingClientRect();m.style.left=Math.min(x,innerWidth-r.width-8)/RZ+'px';m.style.top=Math.min(y,innerHeight-r.height-8)/RZ+'px';
 }
 $('#ctx').addEventListener('click',e=>{const b=e.target.closest('[data-cmd]');if(b)runCmd(b.dataset.cmd);});
 document.addEventListener('pointerdown',e=>{if(!e.target.closest('#ctx'))$('#ctx').hidden=true;},true);
@@ -1420,7 +1427,7 @@ new ResizeObserver(()=>{renderTimeline();}).observe(tl);
 addEventListener('beforeunload',e=>{if(S.clips.length||S.saved.length){e.preventDefault();e.returnValue='';}});
 $$('[data-ic]').forEach(el=>{el.outerHTML=ic(el.dataset.ic);});
 if(document.fonts)FONTS.forEach(([f])=>{try{document.fonts.load(`40px ${f}`);}catch(e){}});
-applyCanvasSize(...projectSize());syncAspectSelect();$('#zoom').value=Math.round(Math.log(S.pps/4)/Math.log(125)*100);
+fitApp();applyCanvasSize(...projectSize());syncAspectSelect();$('#zoom').value=Math.round(Math.log(S.pps/4)/Math.log(125)*100);
 renderLeft();refresh();requestAnimationFrame(loop);
 </script>
 </body>
