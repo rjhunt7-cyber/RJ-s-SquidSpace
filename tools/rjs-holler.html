@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>RJ's Holler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+<style>
+:root{
+  --bg:#E8F0F8;--panel:#FFFFFF;--panel2:#F1F6FB;--line:#D3DFEC;--text:#0B2545;--muted:#56708F;
+  --rail:#0B2545;--railbtn:#16345E;--red:#E5383B;--redsoft:#FCE4E4;--redtext:#B4242A;
+  --glow:#22D3A6;--stage:#071A33;--tile:#11294B;--chip:#E3ECF6;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#081B33;--panel:#0D2341;--panel2:#112B4F;--line:#1E3E6B;--text:#EEF4FA;--muted:#8DA9C4;
+  --rail:#051327;--railbtn:#16345E;--redsoft:#3A1B2A;--redtext:#FF8A8C;--chip:#173761;color-scheme:dark}
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{font-family:'Bricolage Grotesque',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.45;overflow:hidden;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--glow);outline-offset:2px}
+svg{display:block}
+h1,h2,h3{font-weight:800;letter-spacing:-.01em;line-height:1.15}
+
+#app{display:grid;grid-template-columns:72px 264px 1fr;height:100dvh}
+
+/* rail */
+#rail{background:var(--rail);display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 0;overflow-y:auto;scrollbar-width:none}
+.rail-btn{width:48px;height:48px;border-radius:50%;background:var(--c,var(--railbtn));color:#EEF4FA;display:grid;place-items:center;font-weight:800;font-size:15px;transition:border-radius .15s;position:relative;flex-shrink:0}
+.rail-btn svg{width:30px;height:30px}
+.rail-btn:hover,.rail-btn.on{border-radius:16px}
+.rail-btn.on::before{content:'';position:absolute;left:-12px;top:8px;width:4px;height:32px;border-radius:0 4px 4px 0;background:#fff}
+.rail-btn.live::after{content:'';position:absolute;right:-2px;bottom:-2px;width:14px;height:14px;border-radius:50%;background:var(--glow);border:3px solid var(--rail)}
+.rail-btn.add{background:transparent;border:2px dashed #2C5388;color:var(--glow)}
+.rail-btn.add svg{width:22px;height:22px}
+.rail-sep{width:32px;height:2px;background:#1E3E6B;border-radius:2px;flex-shrink:0}
+.badge{position:absolute;right:-4px;bottom:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--red);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center;border:3px solid var(--rail)}
+
+/* side */
+#side{background:var(--panel2);display:flex;flex-direction:column;min-width:0;border-right:1px solid var(--line)}
+#netBanner{margin:10px 10px 0;padding:8px 10px;border-radius:10px;background:var(--redsoft);color:var(--redtext);font-size:13px}
+#sideHead{padding:16px 16px 8px}
+#sideHead h2{font-size:19px}
+#sideBody{flex:1;overflow-y:auto;padding:4px 8px 12px}
+.sec{font-size:13px;color:var(--muted);font-weight:600;padding:14px 8px 4px}
+.item{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:10px;width:100%;text-align:left;position:relative}
+.item:hover{background:color-mix(in srgb,var(--text) 6%,transparent)}
+.item.on{background:color-mix(in srgb,var(--text) 11%,transparent)}
+.item .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.item .sub{display:block;font-size:12px;color:var(--muted);font-weight:400}
+.pill{min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--red);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center}
+.av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:13px;flex-shrink:0;position:relative;background:var(--c,#4B5D73)}
+.av.sm{width:26px;height:26px;font-size:11px}
+.av.lg{width:72px;height:72px;font-size:26px}
+.av .dot{position:absolute;right:-2px;bottom:-2px;width:13px;height:13px;border-radius:50%;border:3px solid var(--panel2);background:#7A8CA3}
+.av .dot.on{background:var(--glow)}
+.av.talk{box-shadow:0 0 0 2px var(--panel2),0 0 0 4px var(--glow)}
+
+#callBar{margin:0 8px 8px;padding:10px 12px;border-radius:14px;background:var(--rail);color:#EEF4FA;display:flex;align-items:center;gap:8px}
+#callBar .lbl{flex:1;min-width:0}
+#callBar .lbl b{display:block;color:var(--glow);font-size:13px}
+#callBar .lbl span{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#BFD3E8}
+.sq{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:#16345E;color:#EEF4FA;flex-shrink:0}
+.sq svg{width:18px;height:18px}
+.sq.red{background:var(--red)}
+.sq.off{background:#3A1B2A;color:#FF8A8C}
+
+#meBar{display:flex;align-items:center;gap:10px;padding:10px 10px calc(10px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--text) 5%,var(--panel2));border-top:1px solid var(--line)}
+#meBar .who{flex:1;min-width:0;text-align:left;border-radius:8px;padding:2px 4px}
+#meBar .who b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#meBar .who span{font-size:12px;color:var(--muted)}
+.ib{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:var(--muted);flex-shrink:0}
+.ib:hover{background:color-mix(in srgb,var(--text) 8%,transparent);color:var(--text)}
+.ib svg{width:20px;height:20px}
+.ib.off{color:var(--redtext)}
+
+/* main */
+#main{position:relative;min-width:0;display:flex;flex-direction:column;background:var(--panel)}
+#page{flex:1;display:flex;flex-direction:column;min-height:0}
+.phead{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line);min-height:62px}
+.phead .t{flex:1;min-width:0}
+.phead .t h2{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.phead .t span{font-size:13px;color:var(--muted)}
+.back{display:none}
+.pbody{flex:1;overflow-y:auto;padding:20px 18px}
+.wrap{max-width:680px}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}
+.card h3{font-size:16px;margin-bottom:4px}
+.card p{color:var(--muted);font-size:14px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.field{flex:1;min-width:150px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);outline:none}
+.field:focus{border-color:var(--glow)}
+.btn{padding:10px 16px;border-radius:999px;font-weight:700;background:var(--chip);display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.btn svg{width:18px;height:18px}
+.btn.pri{background:var(--red);color:#fff}
+.btn.go{background:var(--glow);color:#05261D}
+.btn.ghost{background:transparent;color:var(--muted)}
+.btn:disabled{opacity:.5;cursor:default}
+.code{font-weight:800;letter-spacing:.12em;font-size:22px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--chip);font-weight:700;font-size:13px;letter-spacing:.06em}
+.chip svg{width:14px;height:14px}
+.frow{display:flex;align-items:center;gap:12px;padding:10px 8px;border-top:1px solid var(--line)}
+.frow:first-of-type{border-top:0}
+.frow .nm{flex:1;min-width:0;font-weight:600}
+.frow .nm span{display:block;font-size:12px;color:var(--muted);font-weight:400}
+.empty{color:var(--muted);padding:6px 0}
+
+/* dm */
+#dmList{flex:1;overflow-y:auto;padding:16px 18px 8px}
+.msg{display:flex;gap:12px;padding:3px 0}
+.msg .av{margin-top:2px}
+.msg .gap{width:34px;flex-shrink:0}
+.msg .bd{min-width:0;flex:1}
+.msg .hd{font-weight:700}
+.msg .hd time{font-weight:400;font-size:12px;color:var(--muted);margin-left:6px}
+.msg .tx{white-space:pre-wrap;word-wrap:break-word}
+.msg .tx.wait{color:var(--muted)}
+.msg .tx.wait::after{content:' (sends when they come online)';font-size:12px}
+.msg.first{margin-top:12px}
+.composer{display:flex;gap:8px;padding:12px 18px calc(14px + env(safe-area-inset-bottom))}
+.composer input{flex:1;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--panel2);outline:none;min-width:0}
+.composer input:focus{border-color:var(--glow)}
+.composer button{width:46px;border-radius:14px;background:var(--red);color:#fff;display:grid;place-items:center}
+.composer svg{width:20px;height:20px}
+
+/* call */
+#callView{position:absolute;inset:0;background:var(--stage);color:#EEF4FA;display:flex;flex-direction:column;z-index:5}
+.stop{display:flex;align-items:center;gap:10px;padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top))}
+.stop .t{flex:1;min-width:0;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stop .chip{background:#16345E;color:#EEF4FA}
+.sbody{flex:1;display:flex;min-height:0;gap:10px;padding:0 12px}
+.gwrap{flex:1;position:relative;min-width:0}
+#grid{position:absolute;inset:0;display:grid;gap:10px}
+#grid.focused{display:flex;flex-wrap:wrap;align-content:flex-start;overflow-y:auto}
+#grid.focused .tile{flex:0 0 160px;height:96px}
+#grid.focused .tile.big{flex:1 1 100%;height:calc(100% - 106px);order:-1}
+.tile{position:relative;background:var(--tile);border-radius:18px;overflow:hidden;display:grid;place-items:center;min-height:0;min-width:0;transition:box-shadow .12s;cursor:pointer}
+.tile.speaking{box-shadow:inset 0 0 0 3px var(--glow),0 0 30px -6px var(--glow)}
+.tile video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;pointer-events:none}
+.tile.showvid video{opacity:1}
+.tile.screen video{object-fit:contain;background:#000}
+.tile.mirror video{transform:scaleX(-1)}
+.big-av{width:clamp(48px,26%,112px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-size:clamp(18px,3.6vw,38px);font-weight:800;color:#fff;background:var(--c,#4B5D73)}
+.tile.showvid .big-av{display:none}
+.tag{position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);background:rgba(5,19,39,.76);padding:3px 10px;border-radius:999px;font-size:13px;font-weight:600;display:flex;gap:5px;align-items:center}
+.tag .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag svg{width:14px;height:14px;color:#FF8A8C;flex-shrink:0}
+.tools{position:absolute;right:8px;top:8px;display:flex;gap:6px;align-items:center;opacity:0;transition:opacity .15s}
+.tile:hover .tools,.tile.big .tools{opacity:1}
+.tbtn{width:32px;height:32px;border-radius:10px;background:rgba(5,19,39,.76);display:grid;place-items:center;color:#EEF4FA}
+.tbtn svg{width:16px;height:16px}
+.vol{width:84px;accent-color:var(--glow)}
+#stageNote{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;pointer-events:none}
+#stageNote > div{pointer-events:auto;max-width:360px}
+#stageNote h3{font-size:20px;margin:14px 0 6px}
+#stageNote p{color:#BFD3E8;font-size:14px}
+#stageNote .row{justify-content:center}
+#stageNote .btn{background:#16345E;color:#EEF4FA}
+#soundUnlock{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:3}
+#callChat{width:300px;background:#0C2342;border-radius:18px;display:flex;flex-direction:column;min-height:0}
+.cc-head{display:flex;align-items:center;padding:10px 12px;font-weight:800}
+.cc-head span{flex:1}
+#ccList{flex:1;overflow-y:auto;padding:0 12px;font-size:14px}
+#ccList .m{padding:4px 0}
+#ccList .m b{margin-right:6px}
+#callChat .composer{padding:10px}
+#callChat .composer input{background:#11294B;border-color:#1E3E6B}
+.controls{display:flex;justify-content:center;align-items:center;gap:10px;padding:12px 12px calc(12px + env(safe-area-inset-bottom));flex-wrap:wrap}
+.cbtn{width:52px;height:52px;border-radius:50%;background:#16345E;display:grid;place-items:center;position:relative;color:#EEF4FA}
+.cbtn svg{width:24px;height:24px}
+.cbtn.off{background:#3A1B2A;color:#FF8A8C}
+.cbtn.active{background:var(--glow);color:#05261D}
+.cbtn.leave{background:var(--red);width:68px;border-radius:26px}
+.cbtn .badge{border-color:var(--stage)}
+
+/* modal */
+.mback{position:fixed;inset:0;background:rgba(5,19,39,.62);display:grid;place-items:center;z-index:50;padding:16px}
+.modal{background:var(--panel);color:var(--text);border-radius:22px;padding:22px;width:min(440px,100%);max-height:90dvh;overflow:auto}
+.modal h2{font-size:21px;margin-bottom:6px}
+.modal .lead{color:var(--muted);font-size:14px}
+.modal .card{margin:16px 0 0}
+.mfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.swatches{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.sw{width:34px;height:34px;border-radius:50%;background:var(--c)}
+.sw.on{box-shadow:0 0 0 3px var(--panel),0 0 0 5px var(--text)}
+.ring{text-align:center}
+.ring .av{margin:6px auto 14px;animation:pulse 1.4s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--glow) 70%,transparent)}100%{box-shadow:0 0 0 26px transparent}}
+.ring .row{justify-content:center}
+.onboard{position:fixed;inset:0;background:var(--rail);display:grid;place-items:center;z-index:60;padding:20px;color:#EEF4FA}
+.onboard .box{width:min(420px,100%)}
+.onboard .logo svg{width:84px;height:84px}
+.onboard h1{font-size:clamp(34px,8vw,52px);margin:14px 0 6px}
+.onboard p{color:#BFD3E8}
+.onboard .field{background:#11294B;border-color:#1E3E6B;color:#EEF4FA;width:100%;margin-top:18px;font-size:17px;padding:14px}
+.onboard .sw.on{box-shadow:0 0 0 3px var(--rail),0 0 0 5px #fff}
+#toasts{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:70;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:min(440px,92vw)}
+.toast{background:var(--rail);color:#EEF4FA;padding:10px 16px;border-radius:14px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);text-align:center}
+
+@media (max-width:760px){
+  #app{grid-template-columns:64px 1fr}
+  #main{position:fixed;inset:0;z-index:10;transform:translateX(100%);transition:transform .2s ease}
+  body.pane-main #main{transform:none}
+  .back{display:grid}
+  .phead{padding-top:calc(12px + env(safe-area-inset-top))}
+  #rail{padding-top:calc(12px + env(safe-area-inset-top))}
+  #sideHead{padding-top:calc(16px + env(safe-area-inset-top))}
+  #callChat{position:absolute;inset:auto 8px 8px 8px;height:55%;width:auto;z-index:4;box-shadow:0 -10px 40px rgba(0,0,0,.4)}
+  .sbody{position:relative;padding:0 8px}
+  .cbtn{width:48px;height:48px}
+  .cbtn.leave{width:60px}
+  .tools{opacity:1}
+  .vol{display:none}
+  #grid.focused .tile{flex:0 0 110px;height:76px}
+  #grid.focused .tile.big{height:calc(100% - 86px)}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <nav id="rail" aria-label="Spaces"></nav>
+  <aside id="side">
+    <div id="netBanner" hidden></div>
+    <header id="sideHead"></header>
+    <div id="sideBody"></div>
+    <div id="callBar" hidden></div>
+    <footer id="meBar"></footer>
+  </aside>
+  <main id="main">
+    <div id="page"></div>
+    <section id="callView" hidden aria-label="Call">
+      <div class="stop">
+        <button class="sq" data-act="hide-call" aria-label="Back to chats"><span data-ic="down"></span></button>
+        <div class="t" id="callTitle"></div>
+        <button class="chip" id="callCode" data-act="copy-room" aria-label="Copy room code"></button>
+      </div>
+      <div class="sbody">
+        <div class="gwrap">
+          <div id="grid"></div>
+          <div id="stageNote" hidden></div>
+          <button id="soundUnlock" class="btn go" data-act="unlock-sound" hidden>Turn on call sound</button>
+        </div>
+        <aside id="callChat" hidden>
+          <div class="cc-head"><span>Call chat</span><button class="tbtn" data-act="toggle-chat" aria-label="Close chat"><span data-ic="x"></span></button></div>
+          <div id="ccList"></div>
+          <div class="composer"><input id="ccInput" placeholder="Message everyone in the call" maxlength="1000" autocomplete="off"><button data-act="cc-send" aria-label="Send"><span data-ic="send"></span></button></div>
+        </aside>
+      </div>
+      <div class="controls" id="controls"></div>
+    </section>
+  </main>
+</div>
+<div id="modalRoot"></div>
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+/* ---------- basics ---------- */
+const PRE_U='rjholler-u-', PRE_R='rjholler-r-';
+const ALPHA='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const COLORS=['#E5383B','#1B6FD1','#1FA387','#E8962E','#8E5BD9','#D9568F','#4B5D73','#2E8B3E'];
+const $=s=>document.querySelector(s);
+const randCode=(n=6)=>Array.from(crypto.getRandomValues(new Uint32Array(n)),x=>ALPHA[x%ALPHA.length]).join('');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clip=(s,n=32)=>String(s||'').trim().slice(0,n);
+const initials=n=>(n||'?').trim().split(/\s+/).map(w=>w[0]||'').join('').slice(0,2).toUpperCase()||'?';
+const cleanCode=s=>{s=String(s||'');const m=s.match(/[?&](?:room|add)=([A-Za-z0-9]+)/);return (m?m[1]:s).toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12)};
+const tm=t=>new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+const isMobile=()=>matchMedia('(max-width:760px)').matches;
+
+const P={
+ mic:'<path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+ micoff:'<path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M4 4l16 16"/>',
+ cam:'<rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/>',
+ camoff:'<rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3zM3 3l18 18"/>',
+ screen:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M9 10l3-3 3 3M12 7v6"/>',
+ hang:'<path d="M3 14.5c5-4.5 13-4.5 18 0l-2 3-4-1.2v-3c-2-.6-4-.6-6 0v3L5 17.5z"/>',
+ head:'<path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/>',
+ headoff:'<path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/><path d="M3 3l18 18"/>',
+ chat:'<path d="M4 5h16v11H9l-5 4z"/>',
+ invite:'<circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M19 8v6M16 11h6"/>',
+ flip:'<path d="M4 12a8 8 0 0 1 14-5l2 2M20 12a8 8 0 0 1-14 5l-2-2"/><path d="M20 4v5h-5M4 20v-5h5"/>',
+ expand:'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V6a2 2 0 0 1 2-2h10"/>',
+ back:'<path d="M15 5l-7 7 7 7"/>',
+ down:'<path d="M6 9l6 6 6-6"/>',
+ gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>',
+ call:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+ send:'<path d="M4 12l16-8-6 16-2-7z"/>',
+ x:'<path d="M6 6l12 12M18 6L6 18"/>',
+ share:'<path d="M12 3v12M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>',
+ open:'<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+ users:'<circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M16 4.5a3.5 3.5 0 0 1 0 7M21 20c0-3-1.8-5.2-4.5-5.8"/>',
+ trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>'
+};
+const ic=n=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`;
+const LOGO='<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="7" y="3" width="18" height="16" rx="3" fill="#E5383B"/><rect x="10.5" y="8.5" width="4" height="5" rx="1" fill="#fff"/><rect x="17.5" y="8.5" width="4" height="5" rx="1" fill="#fff"/><rect x="12" y="10" width="2" height="3" fill="#0B2545"/><rect x="19" y="10" width="2" height="3" fill="#0B2545"/><path d="M9 19v7M13.2 19v9.5M18.8 19v9.5M23 19v7" stroke="#E5383B" stroke-width="2.8" stroke-linecap="round"/></svg>';
+const fillIcons=root=>root.querySelectorAll('[data-ic]').forEach(e=>{e.outerHTML=ic(e.dataset.ic)});
+
+/* storage: Claude artifact storage when present, otherwise the browser's own storage */
+const store={
+ async get(k){
+  if(window.storage){try{const r=await window.storage.get(k);return r?JSON.parse(r.value):null}catch(e){return null}}
+  try{const v=window['local'+'Storage'].getItem('rjholler:'+k);return v?JSON.parse(v):null}catch(e){return null}
+ },
+ async set(k,v){
+  const s=JSON.stringify(v);
+  if(window.storage){try{await window.storage.set(k,s)}catch(e){}return}
+  try{window['local'+'Storage'].setItem('rjholler:'+k,s)}catch(e){}
+ }
+};
+
+/* ---------- state ---------- */
+let me=null, friends=[], dms={}, spaces=[], outgoing=[];
+let requests=[], unread={}, view={kind:'home'}, paneMain=false;
+let peer=null, net='connecting';
+const fconns={}, pending={};
+let room=null, callVisible=false, ringing=null, peekData={}, urlHandled=false;
+let saveT=null;
+const save=()=>{clearTimeout(saveT);saveT=setTimeout(()=>store.set('holler-data',{me,friends,dms,spaces,outgoing}),250)};
+const myId=()=>PRE_U+me.code;
+const friendBy=c=>friends.find(f=>f.code===c);
+const isFriend=c=>!!friendBy(c);
+const isOnline=c=>!!(fconns[c]&&fconns[c].conn.open);
+const sendF=(c,m)=>{if(isOnline(c)){try{fconns[c].conn.send(m);return true}catch(e){}}return false};
+
+/* ---------- toasts, copy, sounds ---------- */
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;$('#toasts').appendChild(d);setTimeout(()=>d.remove(),3600)}
+async function copy(t,label){try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy')}catch(_){}a.remove()}toast((label||'Copied')+'')}
+async function share(title,url){if(navigator.share){try{await navigator.share({title,url});return}catch(e){if(e.name==='AbortError')return}}copy(url,'Invite link copied')}
+const baseUrl=()=>location.href.split(/[?#]/)[0];
+let sfx=null;
+function beep(freqs,dur=.12,vol=.08){
+ try{sfx=sfx||new (window.AudioContext||window.webkitAudioContext)();if(sfx.state==='suspended')sfx.resume();
+ freqs.forEach((f,i)=>{const o=sfx.createOscillator(),g=sfx.createGain();o.type='sine';o.frequency.value=f;const t=sfx.currentTime+i*dur;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.015);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g).connect(sfx.destination);o.start(t);o.stop(t+dur+.02)})}catch(e){}
+}
+const chime=()=>beep([880,1175],.09,.05);
+const joinSnd=()=>beep([523,784],.1,.06);
+const leaveSnd=()=>beep([784,523],.1,.06);
+
+/* ---------- network: main peer ---------- */
+function setNet(s){net=s;const b=$('#netBanner');
+ if(s==='online'){b.hidden=true}else{b.hidden=false;b.textContent=s==='dup'?'RJ\'s Holler is open in another tab or device with this account. Close it there and this one will connect.':'Connecting to the Holler network…'}
+}
+function startPeer(){
+ if(peer){try{peer.destroy()}catch(e){}}
+ setNet('connecting');
+ const p=new Peer(myId(),{debug:0});peer=p;
+ p.on('open',()=>{if(peer!==p)return;setNet('online');presenceTick();handleUrl()});
+ p.on('connection',onIncomingConn);
+ p.on('call',onIncomingCall);
+ p.on('disconnected',()=>{if(peer!==p||p.destroyed)return;setNet('connecting');setTimeout(()=>{if(peer===p&&!p.destroyed&&p.disconnected){try{p.reconnect()}catch(e){}}},2000)});
+ p.on('error',e=>{
+  if(peer!==p)return;
+  const m=String(e.message||'').match(/(rjholler-[ur]-[A-Z0-9]+)/);
+  if(e.type==='peer-unavailable'&&m){
+   const id=m[1];
+   if(id.startsWith(PRE_U))delete pending[id.slice(PRE_U.length)];
+   else{const code=id.slice(PRE_R.length);
+    if(room&&room.code===code&&!room.isHost){retryDir(room)}
+    if(peekData[code]===undefined||peekPending[code]){peekPending[code]=false;peekData[code]=[];if(view.kind==='space'&&view.code===code)renderPage()}}
+  }else if(e.type==='unavailable-id'){setNet('dup');setTimeout(()=>{if(peer===p)startPeer()},6000)}
+  else if(['network','server-error','socket-error','socket-closed'].includes(e.type)){setNet('connecting');if(p.destroyed)setTimeout(()=>{if(peer===p)startPeer()},4000)}
+ });
+}
+function presenceTick(){
+ [...friends.map(f=>f.code),...outgoing].forEach(connectFriend);
+ if(view.kind==='space')peekSpace(view.code);
+}
+function connectFriend(code){
+ if(!peer||!peer.open||code===me.code||isOnline(code))return;
+ if(pending[code]&&Date.now()-pending[code]<10000)return;
+ pending[code]=Date.now();
+ const c=peer.connect(PRE_U+code,{reliable:true,metadata:{kind:'dm'}});
+ c.on('open',()=>{delete pending[code];bindFriendConn(code,c,me.code)});
+ c.on('error',()=>{delete pending[code]});
+ setTimeout(()=>{if(!c.open){delete pending[code];try{c.close()}catch(e){}}},10000);
+}
+function onIncomingConn(c){
+ const md=c.metadata||{};
+ if(md.kind==='room'){
+  if(!room||room.code!==md.room){c.on('open',()=>c.close());return}
+  const r=room,mem=r.members.get(c.peer)||addMember(r,{id:c.peer,name:md.name,color:md.color});
+  attachMemberConn(r,mem,c,c.peer);return;
+ }
+ if(!c.peer.startsWith(PRE_U))return;
+ const code=c.peer.slice(PRE_U.length);
+ if(c.open)bindFriendConn(code,c,code);else c.on('open',()=>bindFriendConn(code,c,code));
+}
+function bindFriendConn(code,c,init){
+ const ex=fconns[code];
+ if(ex&&ex.conn!==c&&ex.conn.open){
+  const keep=[me.code,code].sort()[0];
+  if(ex.init===keep){try{c.close()}catch(e){}return}
+  try{ex.conn.close()}catch(e){}
+ }
+ const rec={conn:c,init};fconns[code]=rec;
+ c.on('data',d=>onFriendData(code,d));
+ c.on('close',()=>{if(fconns[code]===rec){delete fconns[code];renderAll()}});
+ try{
+  c.send({t:'hi',name:me.name,color:me.color});
+  if(outgoing.includes(code)&&!isFriend(code))c.send({t:'req',name:me.name,color:me.color});
+ }catch(e){}
+ flushOutbox(code);renderAll();
+}
+function makeFriend(code,d){
+ outgoing=outgoing.filter(x=>x!==code);requests=requests.filter(r=>r.code!==code);
+ if(!isFriend(code))friends.push({code,name:clip(d.name)||code,color:COLORS.includes(d.color)?d.color:COLORS[6]});
+ dms[code]=dms[code]||[];save();
+}
+function onFriendData(code,d){
+ if(!d||typeof d!=='object')return;
+ const f=friendBy(code);
+ switch(d.t){
+  case 'hi': if(f){f.name=clip(d.name)||f.name;if(COLORS.includes(d.color))f.color=d.color;save()}
+   {const rq=requests.find(r=>r.code===code);if(rq){rq.name=clip(d.name);rq.color=d.color}}
+   renderAll();break;
+  case 'req':
+   if(isFriend(code))sendF(code,{t:'acc',name:me.name,color:me.color});
+   else if(outgoing.includes(code)){makeFriend(code,d);sendF(code,{t:'acc',name:me.name,color:me.color});toast(`You and ${clip(d.name)} are now friends`)}
+   else if(!requests.find(r=>r.code===code)){requests.push({code,name:clip(d.name)||code,color:d.color});toast(`${clip(d.name)} sent you a friend request`);chime()}
+   renderAll();break;
+  case 'acc':
+   if(outgoing.includes(code)){makeFriend(code,d);toast(`${clip(d.name)} accepted your friend request`);chime();renderAll()}break;
+  case 'msg':
+   if(!f)return;
+   dms[code]=dms[code]||[];dms[code].push({me:false,text:String(d.text||'').slice(0,2000),t:Date.now()});
+   if(dms[code].length>500)dms[code].splice(0,dms[code].length-500);
+   if(!(view.kind==='dm'&&view.code===code&&(paneMain||!isMobile())&&!callVisible&&document.hasFocus())){unread[code]=(unread[code]||0)+1;chime()}
+   save();renderAll();break;
+  case 'ring': if(f)incomingRing(code,cleanCode(d.room));break;
+  case 'ringoff': if(ringing&&ringing.code===code)stopRinging();break;
+  case 'decline': if(f){toast(`${f.name} can't pick up right now`);if(room)room.ringing=null;renderStageNote()}break;
+  case 'unfriend': friends=friends.filter(x=>x.code!==code);save();renderAll();break;
+ }
+}
+function flushOutbox(code){
+ const list=dms[code];if(!list||!isOnline(code))return;let ch=false;
+ list.forEach(m=>{if(m.me&&m.wait){if(sendF(code,{t:'msg',text:m.text})){m.wait=false;ch=true}}});
+ if(ch){save();if(view.kind==='dm'&&view.code===code)renderPage()}
+}
+function sendDM(code,text){
+ text=text.trim().slice(0,2000);if(!text)return;
+ dms[code]=dms[code]||[];
+ const m={me:true,text,t:Date.now(),wait:true};dms[code].push(m);
+ if(sendF(code,{t:'msg',text}))m.wait=false;
+ save();renderPage();
+}
+function addFriend(raw){
+ const code=cleanCode(raw);
+ if(code.length!==6){toast('Friend codes are 6 letters and numbers.');return false}
+ if(code===me.code){toast('That\'s your own code. Send it to a friend instead.');return false}
+ if(isFriend(code)){toast('You\'re already friends.');return false}
+ const rq=requests.find(r=>r.code===code);
+ if(rq){acceptReq(code);return true}
+ if(!outgoing.includes(code))outgoing.push(code);save();
+ if(isOnline(code))sendF(code,{t:'req',name:me.name,color:me.color});else connectFriend(code);
+ toast('Friend request sent. It goes through when they\'re online.');renderAll();return true;
+}
+function acceptReq(code){const r=requests.find(x=>x.code===code);if(!r)return;makeFriend(code,r);sendF(code,{t:'acc',name:me.name,color:me.color});renderAll()}
+
+/* ---------- ringing ---------- */
+let ringLoop=null;
+function incomingRing(code,rc){
+ if(!rc||(room&&room.code===rc))return;
+ stopRinging(true);
+ const f=friendBy(code);
+ ringing={code,room:rc,timer:setTimeout(()=>stopRinging(),35000)};
+ const ringOnce=()=>{beep([660,880,660,880],.16,.09);if(navigator.vibrate)navigator.vibrate([200,120,200])};
+ ringOnce();ringLoop=setInterval(ringOnce,2200);
+ modal(`<div class="ring"><div class="av lg" style="--c:${f.color}">${esc(initials(f.name))}</div><h2>${esc(f.name)} is calling</h2><p class="lead">${room?'Answering will end your current call.':'Join to talk, share your screen, or turn on video.'}</p>
+  <div class="row"><button class="btn pri" data-act="ring-decline">${ic('hang')}Decline</button><button class="btn go" data-act="ring-accept">${ic('call')}Answer</button></div></div>`,true);
+}
+function stopRinging(silent){
+ if(!ringing)return;clearTimeout(ringing.timer);clearInterval(ringLoop);ringing=null;
+ if(!silent)closeModal();
+}
+
+/* ---------- local media ---------- */
+const media={ctx:null,dest:null,micStream:null,micGain:null,hasMic:false,camStream:null,screenStream:null,screenSrc:null,blank:null,blankTimer:null,out:null,video:null,mic:true,cam:false,screen:false,deaf:false,facing:'user',micBeforeDeaf:true};
+async function buildMedia(){
+ const AC=window.AudioContext||window.webkitAudioContext;
+ media.ctx=new AC();try{await media.ctx.resume()}catch(e){}
+ media.dest=media.ctx.createMediaStreamDestination();
+ media.micGain=media.ctx.createGain();media.micGain.connect(media.dest);
+ try{
+  media.micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+  media.ctx.createMediaStreamSource(media.micStream).connect(media.micGain);media.hasMic=true;
+  hookAnalyser('self',null,media.micGain);
+ }catch(e){media.hasMic=false;toast('No microphone access. You can still listen and watch. Allow the mic in your browser to talk.')}
+ media.mic=media.hasMic;media.micGain.gain.value=media.mic?1:0;
+ const cv=document.createElement('canvas');cv.width=320;cv.height=180;const cx=cv.getContext('2d');
+ const draw=()=>{cx.fillStyle='#000';cx.fillRect(0,0,320,180)};draw();media.blankTimer=setInterval(draw,500);
+ const tracks=[media.dest.stream.getAudioTracks()[0]];
+ if(cv.captureStream){media.blank=cv.captureStream(2).getVideoTracks()[0];tracks.push(media.blank)}
+ media.out=new MediaStream(tracks);media.video=media.blank;
+ media.cam=false;media.screen=false;media.deaf=false;
+}
+function teardownMedia(){
+ [media.micStream,media.camStream,media.screenStream].forEach(s=>s&&s.getTracks().forEach(t=>t.stop()));
+ if(media.blank)media.blank.stop();clearInterval(media.blankTimer);
+ try{media.ctx&&media.ctx.close()}catch(e){}
+ Object.assign(media,{ctx:null,micStream:null,camStream:null,screenStream:null,screenSrc:null,blank:null,out:null,video:null,cam:false,screen:false,deaf:false});
+}
+function setVideo(track){
+ if(!media.out||!track)return;
+ const old=media.out.getVideoTracks()[0];if(old)media.out.removeTrack(old);
+ media.out.addTrack(track);media.video=track;
+ if(room)room.members.forEach(m=>{
+  const pc=m.call&&m.call.peerConnection;if(!pc)return;
+  let s=pc.getSenders().find(x=>x.track&&x.track.kind==='video');
+  if(!s){const tr=pc.getTransceivers().find(t=>t.receiver&&t.receiver.track&&t.receiver.track.kind==='video');s=tr&&tr.sender}
+  if(s)s.replaceTrack(track).catch(()=>{});
+ });
+ updateTile('self');
+}
+async function startCam(){
+ const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:media.facing,width:{ideal:1280},height:{ideal:720}}});
+ if(media.screen)stopScreen(false);
+ if(media.camStream)media.camStream.getTracks().forEach(t=>t.stop());
+ media.camStream=s;setVideo(s.getVideoTracks()[0]);media.cam=true;
+}
+function stopCam(){if(media.camStream)media.camStream.getTracks().forEach(t=>t.stop());media.camStream=null;media.cam=false}
+async function toggleCam(){
+ if(!room)return;
+ if(!media.blank){toast('This browser can\'t send video in calls.');return}
+ if(media.cam){stopCam();setVideo(media.blank)}
+ else{try{await startCam()}catch(e){toast('Camera is blocked. Allow camera access in your browser settings, then try again.');return}}
+ sendState();renderControls();
+}
+async function flipCam(){
+ media.facing=media.facing==='user'?'environment':'user';
+ if(media.cam){try{await startCam()}catch(e){toast('Couldn\'t switch cameras.')}}
+ updateTile('self');
+}
+const canShare=()=>!!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia)&&!/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+async function toggleScreen(){
+ if(!room)return;
+ if(media.screen){stopScreen(true);return}
+ if(!canShare()){toast('Phones can watch screen shares, but mobile browsers don\'t allow sharing your own screen.');return}
+ try{
+  const s=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:30}},audio:true});
+  if(media.cam)stopCam();
+  media.screenStream=s;const vt=s.getVideoTracks()[0];try{vt.contentHint='detail'}catch(e){}
+  vt.onended=()=>stopScreen(true);
+  if(s.getAudioTracks().length){media.screenSrc=media.ctx.createMediaStreamSource(new MediaStream(s.getAudioTracks()));media.screenSrc.connect(media.dest)}
+  media.screen=true;setVideo(vt);sendState();renderControls();
+ }catch(e){if(e.name!=='NotAllowedError'&&e.name!=='AbortError')toast('Screen share didn\'t start. Check your browser\'s screen recording permission.')}
+}
+function stopScreen(restore){
+ if(media.screenStream)media.screenStream.getTracks().forEach(t=>t.stop());
+ if(media.screenSrc){try{media.screenSrc.disconnect()}catch(e){}media.screenSrc=null}
+ media.screenStream=null;
+ if(media.screen){media.screen=false;if(restore){setVideo(media.blank);sendState();renderControls()}}
+}
+function toggleMic(){
+ if(!room)return;
+ if(!media.hasMic){toast('No microphone access. Allow the mic in your browser settings and rejoin.');return}
+ if(media.deaf){media.deaf=false;applyDeaf()}
+ media.mic=!media.mic;media.micGain.gain.value=media.mic?1:0;sendState();renderControls();renderMeBar();
+}
+function toggleDeaf(){
+ if(!room)return;
+ media.deaf=!media.deaf;
+ if(media.deaf){media.micBeforeDeaf=media.mic;media.mic=false}else{media.mic=media.micBeforeDeaf&&media.hasMic}
+ if(media.micGain)media.micGain.gain.value=media.mic?1:0;
+ applyDeaf();sendState();renderControls();renderMeBar();
+}
+function applyDeaf(){document.querySelectorAll('#grid .tile:not([data-id="self"]) video').forEach(v=>v.muted=media.deaf)}
+
+/* ---------- speaking detection ---------- */
+const anlz=new Map();
+function hookAnalyser(id,stream,node){
+ if(!media.ctx)return;
+ try{
+  const an=media.ctx.createAnalyser();an.fftSize=512;
+  if(node)node.connect(an);
+  else{if(!stream.getAudioTracks().length)return;media.ctx.createMediaStreamSource(stream).connect(an)}
+  anlz.set(id,{an,buf:new Uint8Array(an.fftSize),lvl:0});
+ }catch(e){}
+}
+setInterval(()=>{
+ if(!room)return;
+ anlz.forEach((a,id)=>{
+  a.an.getByteTimeDomainData(a.buf);let s=0;
+  for(let i=0;i<a.buf.length;i++){const v=(a.buf[i]-128)/128;s+=v*v}
+  const rms=Math.sqrt(s/a.buf.length);
+  let on=rms>.035;
+  if(id==='self'&&!media.mic)on=false;
+  if(id!=='self'){const m=room.members.get(id);if(m&&!m.state.mic)on=false}
+  a.lvl=on?4:Math.max(0,a.lvl-1);
+  const t=document.querySelector(`#grid .tile[data-id="${id}"]`);if(t)t.classList.toggle('speaking',a.lvl>0);
+  if(id==='self'){const av=$('#meAv');if(av)av.classList.toggle('talk',a.lvl>0)}
+ });
+},110);
+
+/* ---------- rooms ---------- */
+async function joinRoom(code,label,opts={}){
+ code=cleanCode(code);if(code.length<4){toast('Room codes are at least 4 letters or numbers.');return false}
+ if(!peer||!peer.open){toast('Still connecting to the Holler network. Try again in a moment.');return false}
+ if(room){if(room.code===code){showCall();return true}await leaveRoom(true)}
+ await buildMedia();
+ room={code,label:label||('Room '+code),isHost:false,dir:null,dirConn:null,roster:new Map(),members:new Map(),chat:[],chatUnread:0,alive:true,focus:null,ringing:opts.ringing||null};
+ $('#grid').innerHTML='';tileFor('self');updateTile('self');
+ showCall();claimOrConnect(room);renderAll();
+ return true;
+}
+function claimOrConnect(r){
+ if(room!==r||!r.alive||r.isHost)return;
+ const dp=new Peer(PRE_R+r.code,{debug:0});let settled=false;
+ dp.on('open',()=>{if(settled){return}settled=true;if(room!==r||!r.alive){dp.destroy();return}r.isHost=true;r.dir=dp;setupDir(dp,r)});
+ dp.on('error',e=>{if(settled)return;settled=true;try{dp.destroy()}catch(_){}
+  if(room!==r||!r.alive)return;
+  if(e.type==='unavailable-id')connectDir(r);else setTimeout(()=>claimOrConnect(r),2500)});
+ dp.on('disconnected',()=>{if(r.dir===dp&&!dp.destroyed)setTimeout(()=>{try{dp.reconnect()}catch(e){}},1500)});
+}
+function rosterList(r){return [...r.roster].map(([id,v])=>({id,name:v.name,color:v.color}))}
+function setupDir(dp,r){
+ r.roster=new Map([[myId(),{name:me.name,color:me.color}]]);
+ r.members.forEach(m=>r.roster.set(m.id,{name:m.name,color:m.color}));
+ dp.on('connection',c=>{
+  c.on('data',d=>{
+   if(!d||typeof d!=='object')return;
+   if(d.t==='peek'){c.send({t:'roster',members:rosterList(r)});return}
+   if(d.t==='join'&&typeof d.id==='string'){c._mid=d.id;r.roster.set(d.id,{name:clip(d.name),color:d.color});c.send({t:'roster',members:rosterList(r)})}
+  });
+  c.on('close',()=>{if(c._mid&&c._mid!==myId()&&!r.members.has(c._mid))r.roster.delete(c._mid)});
+ });
+}
+function connectDir(r){
+ if(room!==r||!r.alive||r.isHost)return;
+ const c=peer.connect(PRE_R+r.code,{reliable:true,metadata:{kind:'dir'}});r.dirConn=c;let opened=false;
+ const to=setTimeout(()=>{if(!opened){try{c.close()}catch(e){}retryDir(r)}},8000);
+ c.on('open',()=>{opened=true;clearTimeout(to);c.send({t:'join',id:myId(),name:me.name,color:me.color})});
+ c.on('data',d=>{if(d&&d.t==='roster'&&Array.isArray(d.members))d.members.forEach(m=>{if(m.id&&m.id!==myId()&&m.id.startsWith(PRE_U)&&!r.members.has(m.id))connectMember(r,m)})});
+ c.on('close',()=>{if(opened&&r.dirConn===c)retryDir(r)});
+}
+function retryDir(r){
+ if(room!==r||!r.alive||r.isHost||r._retrying)return;
+ r._retrying=true;r.dirConn=null;
+ setTimeout(()=>{r._retrying=false;claimOrConnect(r)},300+Math.random()*1500);
+}
+function addMember(r,m){
+ const mem={id:m.id,name:clip(m.name)||'Guest',color:COLORS.includes(m.color)?m.color:COLORS[6],state:{mic:true,cam:false,screen:false,deaf:false},call:null,callInit:null,conn:null,connInit:null,stream:null};
+ r.members.set(m.id,mem);
+ if(r.isHost)r.roster.set(m.id,{name:mem.name,color:mem.color});
+ if(r.ringing)r.ringing=null;
+ tileFor(m.id);updateTile(m.id);joinSnd();renderStageNote();renderSide();layoutGrid();
+ setTimeout(()=>{if(room===r&&r.members.get(m.id)===mem&&!mem.stream&&!(mem.conn&&mem.conn.open))removeMember(r,m.id)},20000);
+ return mem;
+}
+function connectMember(r,m){
+ const mem=addMember(r,m);
+ const c=peer.connect(m.id,{reliable:true,metadata:{kind:'room',room:r.code,name:me.name,color:me.color}});
+ attachMemberConn(r,mem,c,myId());
+ const call=peer.call(m.id,media.out,{metadata:{room:r.code,name:me.name,color:me.color}});
+ if(call)attachMemberCall(r,mem,call,myId());
+}
+const keepId=id=>[myId(),id].sort()[0];
+function attachMemberConn(r,mem,c,init){
+ if(mem.conn&&mem.conn!==c&&mem.conn.open){
+  if(mem.connInit===keepId(mem.id)){try{c.close()}catch(e){}return}
+  const old=mem.conn;mem.conn=null;try{old.close()}catch(e){}
+ }
+ mem.conn=c;mem.connInit=init;
+ const hello=()=>{try{c.send(stateMsg())}catch(e){}};
+ if(c.open)hello();else c.on('open',hello);
+ c.on('data',d=>onMemberData(r,mem,d));
+ c.on('close',()=>{if(mem.conn===c&&room===r)removeMember(r,mem.id)});
+ c.on('error',()=>{});
+}
+function onIncomingCall(call){
+ const md=call.metadata||{};
+ if(!room||room.code!==md.room||!media.out){setTimeout(()=>{try{call.close()}catch(e){}},50);return}
+ const r=room,mem=r.members.get(call.peer)||addMember(r,{id:call.peer,name:md.name,color:md.color});
+ if(mem.call&&mem.call.open&&mem.callInit===keepId(mem.id)){try{call.close()}catch(e){}return}
+ call.answer(media.out);
+ attachMemberCall(r,mem,call,call.peer);
+ setTimeout(()=>{if(media.video)setVideo(media.video)},400);
+}
+function attachMemberCall(r,mem,call,init){
+ if(mem.call&&mem.call!==call){const old=mem.call;mem.call=null;try{old.close()}catch(e){}}
+ mem.call=call;mem.callInit=init;
+ call.on('stream',s=>{if(mem.call!==call)return;mem.stream=s;anlz.delete(mem.id);hookAnalyser(mem.id,s);updateTile(mem.id)});
+ call.on('close',()=>{if(mem.call===call&&room===r)removeMember(r,mem.id)});
+ call.on('error',()=>{});
+ const pc=call.peerConnection;
+ if(pc){let dt=null;pc.addEventListener('iceconnectionstatechange',()=>{
+  const st=pc.iceConnectionState;clearTimeout(dt);
+  if(st==='failed'){if(mem.call===call&&room===r)removeMember(r,mem.id)}
+  else if(st==='disconnected')dt=setTimeout(()=>{if(pc.iceConnectionState==='disconnected'&&mem.call===call&&room===r)removeMember(r,mem.id)},9000);
+ })}
+}
+function onMemberData(r,mem,d){
+ if(!d||typeof d!=='object'||room!==r)return;
+ if(d.t==='state'){mem.name=clip(d.name)||mem.name;if(COLORS.includes(d.color))mem.color=d.color;mem.state={mic:!!d.mic,cam:!!d.cam,screen:!!d.screen,deaf:!!d.deaf};updateTile(mem.id);renderSide()}
+ else if(d.t==='chat'){r.chat.push({name:mem.name,color:mem.color,text:String(d.text||'').slice(0,1000),t:Date.now()});if($('#callChat').hidden||!callVisible){r.chatUnread++;chime()}renderChat();renderControls()}
+ else if(d.t==='bye')removeMember(r,mem.id);
+}
+function removeMember(r,id){
+ const mem=r.members.get(id);if(!mem)return;
+ r.members.delete(id);if(r.isHost)r.roster.delete(id);
+ try{mem.call&&mem.call.close()}catch(e){}try{mem.conn&&mem.conn.close()}catch(e){}
+ anlz.delete(id);
+ const t=document.querySelector(`#grid .tile[data-id="${id}"]`);if(t)t.remove();
+ if(r.focus===id)r.focus=null;
+ leaveSnd();layoutGrid();renderStageNote();renderSide();
+}
+const stateMsg=()=>({t:'state',name:me.name,color:me.color,mic:media.mic&&media.hasMic,cam:media.cam,screen:media.screen,deaf:media.deaf});
+function broadcast(m){if(room)room.members.forEach(x=>{if(x.conn&&x.conn.open){try{x.conn.send(m)}catch(e){}}})}
+function sendState(){broadcast(stateMsg());updateTile('self')}
+async function leaveRoom(quiet){
+ if(!room)return;const r=room;r.alive=false;
+ if(r.ringing)sendF(r.ringing,{t:'ringoff'});
+ broadcast({t:'bye'});
+ await new Promise(res=>setTimeout(res,150));
+ r.members.forEach(m=>{try{m.call&&m.call.close()}catch(e){}try{m.conn&&m.conn.close()}catch(e){}});
+ try{r.dirConn&&r.dirConn.close()}catch(e){}try{r.dir&&r.dir.destroy()}catch(e){}
+ room=null;anlz.clear();teardownMedia();
+ $('#grid').innerHTML='';$('#ccList').innerHTML='';$('#callChat').hidden=true;$('#soundUnlock').hidden=true;
+ hideCall();if(!quiet)leaveSnd();renderAll();
+}
+window.addEventListener('pagehide',()=>{if(room)broadcast({t:'bye'})});
+
+/* ---------- call UI ---------- */
+function showCall(){callVisible=true;$('#callView').hidden=false;paneMain=true;document.body.classList.add('pane-main');if(room){room.chatUnread=$('#callChat').hidden?room.chatUnread:0}renderControls();renderStageNote();requestAnimationFrame(layoutGrid);renderCallBar()}
+function hideCall(){callVisible=false;$('#callView').hidden=true;if(isMobile()&&view.kind==='home'){paneMain=false;document.body.classList.remove('pane-main')}renderCallBar()}
+function tileFor(id){
+ let t=document.querySelector(`#grid .tile[data-id="${id}"]`);if(t)return t;
+ t=document.createElement('div');t.className='tile';t.dataset.id=id;t.tabIndex=0;
+ t.innerHTML=`<video playsinline autoplay ${id==='self'?'muted':''}></video><div class="big-av"></div><div class="tag"><span class="mi"></span><span class="nm"></span></div>
+  <div class="tools">${id==='self'?'':'<input type="range" class="vol" min="0" max="1" step="0.05" value="1" aria-label="Volume">'}<button class="tbtn fs" aria-label="Full screen">${ic('expand')}</button></div>`;
+ const v=t.querySelector('video');v.muted=id==='self'||media.deaf;
+ t.addEventListener('click',e=>{if(e.target.closest('.tools')||!room)return;room.focus=room.focus===id?null:id;layoutGrid()});
+ t.addEventListener('keydown',e=>{if(e.key==='Enter'&&room){room.focus=room.focus===id?null:id;layoutGrid()}});
+ t.querySelector('.fs').onclick=()=>{if(t.requestFullscreen)t.requestFullscreen().catch(()=>{});else if(t.webkitRequestFullscreen)t.webkitRequestFullscreen();else if(v.webkitEnterFullscreen)v.webkitEnterFullscreen()};
+ const vol=t.querySelector('.vol');if(vol)vol.oninput=()=>{v.volume=+vol.value};
+ $('#grid').appendChild(t);layoutGrid();return t;
+}
+function updateTile(id){
+ if(!room)return;const t=tileFor(id),v=t.querySelector('video');
+ let name,color,st,stream=null;
+ if(id==='self'){name=me.name+' (you)';color=me.color;st={mic:media.mic&&media.hasMic,cam:media.cam,screen:media.screen,deaf:media.deaf};
+  if(st.cam||st.screen){if(!v.srcObject||v.srcObject.getVideoTracks()[0]!==media.video)v.srcObject=new MediaStream([media.video])}else v.srcObject=null;
+ }else{const m=room.members.get(id);if(!m)return;name=m.name;color=m.color;st=m.state;stream=m.stream;
+  if(stream&&v.srcObject!==stream){v.srcObject=stream;v.muted=media.deaf;const p=v.play();if(p)p.catch(()=>{$('#soundUnlock').hidden=false})}
+ }
+ const av=t.querySelector('.big-av');av.style.setProperty('--c',color);av.textContent=initials(name.replace(' (you)',''));
+ t.querySelector('.nm').textContent=id!=='self'&&!stream?name+' (connecting…)':name;
+ t.querySelector('.mi').innerHTML=st.deaf?ic('headoff'):(!st.mic?ic('micoff'):'');
+ t.classList.toggle('showvid',!!(st.cam||st.screen));
+ t.classList.toggle('screen',!!st.screen);
+ t.classList.toggle('mirror',id==='self'&&st.cam&&media.facing==='user');
+ if(st.screen&&id!=='self'&&room.focus===null&&!t._autoFocused){t._autoFocused=true;room.focus=id;layoutGrid()}
+ if(!st.screen)t._autoFocused=false;
+}
+function layoutGrid(){
+ const g=$('#grid');if(!g||!room)return;
+ const tiles=[...g.children];
+ if(room.focus&&!tiles.find(t=>t.dataset.id===room.focus))room.focus=null;
+ g.classList.toggle('focused',!!room.focus);
+ tiles.forEach(t=>t.classList.toggle('big',room.focus===t.dataset.id));
+ if(room.focus){g.style.gridTemplateColumns='';g.style.gridTemplateRows='';return}
+ const n=tiles.length||1,W=g.clientWidth||600,H=g.clientHeight||400,gap=10;
+ let best=1,bs=0;
+ for(let c=1;c<=n;c++){const rr=Math.ceil(n/c),w=(W-gap*(c-1))/c,h=(H-gap*(rr-1))/rr,s=Math.min(w,h*16/9);if(s>bs){bs=s;best=c}}
+ g.style.gridTemplateColumns=`repeat(${best},1fr)`;g.style.gridTemplateRows=`repeat(${Math.ceil(n/best)},1fr)`;
+}
+new ResizeObserver(()=>layoutGrid()).observe(document.querySelector('.gwrap'));
+function renderStageNote(){
+ const n=$('#stageNote');if(!room){n.hidden=true;return}
+ $('#callTitle').textContent=room.label;$('#callCode').innerHTML=`${ic('copy')}${room.code}`;
+ if(room.members.size){n.hidden=true;return}
+ const f=room.ringing&&friendBy(room.ringing);
+ n.hidden=false;
+ n.innerHTML=f?`<div><div class="av lg" style="--c:${f.color};margin:0 auto">${esc(initials(f.name))}</div><h3>Ringing ${esc(f.name)}…</h3><p>They'll pop in here when they answer.</p></div>`
+ :`<div><h3>You're the only one here</h3><p>Share room code <b>${room.code}</b> or the invite link so people can join from any computer or phone.</p>
+  <div class="row"><button class="btn" data-act="copy-room">${ic('copy')}Copy code</button><button class="btn" data-act="share-room">${ic('share')}Share link</button><button class="btn" data-act="invite">${ic('invite')}Ring a friend</button></div></div>`;
+ // self tile hidden behind note only when it has no video
+ const st=document.querySelector('#grid .tile[data-id="self"]');if(st)st.style.visibility=(media.cam||media.screen)?'visible':'hidden';
+ if(room.members.size&&st)st.style.visibility='visible';
+}
+function renderControls(){
+ if(!room)return;
+ const c=$('#controls');
+ const micOff=!media.mic||!media.hasMic;
+ c.innerHTML=`
+  <button class="cbtn ${micOff?'off':''}" data-act="mic" aria-label="${micOff?'Unmute':'Mute'}" title="${micOff?'Unmute':'Mute'}">${ic(micOff?'micoff':'mic')}</button>
+  <button class="cbtn ${media.deaf?'off':''}" data-act="deaf" aria-label="${media.deaf?'Undeafen':'Deafen'}" title="${media.deaf?'Undeafen':'Deafen'}">${ic(media.deaf?'headoff':'head')}</button>
+  <button class="cbtn ${media.cam?'active':''}" data-act="cam" aria-label="${media.cam?'Turn off camera':'Turn on camera'}" title="Camera">${ic(media.cam?'cam':'camoff')}</button>
+  ${media.cam&&isMobile()?`<button class="cbtn" data-act="flip" aria-label="Switch camera" title="Switch camera">${ic('flip')}</button>`:''}
+  ${canShare()?`<button class="cbtn ${media.screen?'active':''}" data-act="screen" aria-label="${media.screen?'Stop sharing':'Share your screen'}" title="${media.screen?'Stop sharing':'Share your screen'}">${ic('screen')}</button>`:''}
+  <button class="cbtn" data-act="toggle-chat" aria-label="Call chat" title="Call chat">${ic('chat')}${room.chatUnread?`<span class="badge">${room.chatUnread}</span>`:''}</button>
+  <button class="cbtn" data-act="invite" aria-label="Invite people" title="Invite people">${ic('invite')}</button>
+  <button class="cbtn leave" data-act="leave" aria-label="Leave call" title="Leave call">${ic('hang')}</button>`;
+ renderStageNote();
+}
+function renderChat(){
+ if(!room)return;const l=$('#ccList');const near=l.scrollHeight-l.scrollTop-l.clientHeight<60;
+ l.innerHTML=room.chat.length?room.chat.map(m=>`<div class="m"><b style="color:${m.color}">${esc(m.name)}</b>${esc(m.text)}</div>`).join(''):'<p class="empty">Messages here only go to people in this call.</p>';
+ if(near)l.scrollTop=l.scrollHeight;
+}
+function sendCallChat(){
+ const i=$('#ccInput'),t=i.value.trim().slice(0,1000);if(!t||!room)return;i.value='';
+ room.chat.push({name:me.name,color:me.color,text:t,t:Date.now()});broadcast({t:'chat',text:t});renderChat();
+}
+
+/* ---------- spaces ---------- */
+const peekPending={};
+function peekSpace(code){
+ if(!peer||!peer.open)return;
+ if(room&&room.code===code){renderSide();return}
+ if(peekPending[code])return;peekPending[code]=true;
+ const c=peer.connect(PRE_R+code,{metadata:{kind:'dir'}});
+ const done=list=>{clearTimeout(to);peekPending[code]=false;peekData[code]=list;try{c.close()}catch(e){}if(view.kind==='space'&&view.code===code){renderPage();renderSide()}};
+ const to=setTimeout(()=>done([]),6000);
+ c.on('open',()=>c.send({t:'peek'}));
+ c.on('data',d=>{if(d&&d.t==='roster')done(Array.isArray(d.members)?d.members:[])});
+}
+function spaceMembers(code){
+ if(room&&room.code===code)return [{id:myId(),name:me.name,color:me.color},...[...room.members.values()].map(m=>({id:m.id,name:m.name,color:m.color}))];
+ return peekData[code]||null;
+}
+
+/* ---------- rendering ---------- */
+const totalUnread=()=>Object.values(unread).reduce((a,b)=>a+b,0);
+function avHtml(name,color,cls='',online){return `<span class="av ${cls}" style="--c:${color}">${esc(initials(name))}${online!==undefined?`<span class="dot ${online?'on':''}"></span>`:''}</span>`}
+function renderRail(){
+ const n=totalUnread()+requests.length;
+ $('#rail').innerHTML=`<button class="rail-btn ${view.kind!=='space'?'on':''}" data-act="go-home" aria-label="Friends and messages" title="Friends and messages" style="--c:#16345E">${LOGO}${n?`<span class="badge">${n>99?'99+':n}</span>`:''}</button>
+ <div class="rail-sep"></div>
+ ${spaces.map(s=>`<button class="rail-btn ${view.kind==='space'&&view.code===s.code?'on':''} ${room&&room.code===s.code?'live':''}" data-act="go-space" data-v="${s.code}" title="${esc(s.name)}" aria-label="${esc(s.name)}" style="--c:${s.color}">${esc(initials(s.name))}</button>`).join('')}
+ <button class="rail-btn add" data-act="open-add" aria-label="Add a friend, join a room, or create a space" title="Add a friend, join a room, or create a space">${ic('plus')}</button>`;
+}
+function friendSorted(){return [...friends].sort((a,b)=>(isOnline(b.code)-isOnline(a.code))||a.name.localeCompare(b.name))}
+function renderSide(){
+ const h=$('#sideHead'),b=$('#sideBody');
+ if(view.kind==='space'){
+  const s=spaces.find(x=>x.code===view.code);if(!s){view={kind:'home'};return renderSide()}
+  h.innerHTML=`<h2>${esc(s.name)}</h2><button class="chip" style="margin-top:8px" data-act="copy" data-v="${s.code}">${ic('copy')}${s.code}</button>`;
+  const ms=spaceMembers(s.code);
+  b.innerHTML=`<div class="sec">Voice room</div>
+   <button class="item ${room&&room.code===s.code?'on':''}" data-act="join-space" data-v="${s.code}"><span class="sq">${ic('head')}</span><span class="nm">${room&&room.code===s.code?'Open call':'Join call'}<span class="sub">${ms===null?'Checking who\'s here…':ms.length?ms.length+' in the call':'Nobody\'s here'}</span></span></button>
+   ${(ms||[]).map(m=>`<div class="item" style="padding-left:20px">${avHtml(m.name,m.color,'sm')}<span class="nm">${esc(m.name)}</span></div>`).join('')}
+   <div class="sec">Space</div>
+   <button class="item" data-act="go-space-page" data-v="${s.code}"><span class="sq">${ic('users')}</span><span class="nm">Space details</span></button>`;
+ }else{
+  h.innerHTML=`<h2>Messages</h2>`;
+  const fs=friendSorted();
+  b.innerHTML=`<button class="item ${view.kind==='home'&&(paneMain||!isMobile())?'on':''}" data-act="go-friends"><span class="sq">${ic('users')}</span><span class="nm">Friends</span>${requests.length?`<span class="pill">${requests.length}</span>`:''}</button>
+   <div class="sec">Direct messages</div>
+   ${fs.length?fs.map(f=>`<button class="item ${view.kind==='dm'&&view.code===f.code?'on':''}" data-act="go-dm" data-v="${f.code}">${avHtml(f.name,f.color,'',isOnline(f.code))}<span class="nm">${esc(f.name)}<span class="sub">${isOnline(f.code)?'Online':'Offline'}</span></span>${unread[f.code]?`<span class="pill">${unread[f.code]}</span>`:''}</button>`).join(''):`<p class="empty" style="padding:6px 8px;font-size:14px">Add friends with their code to message and call them.</p>`}`;
+ }
+}
+function renderMeBar(){
+ if(!me)return;
+ const inCall=!!room,micOff=inCall&&(!media.mic||!media.hasMic);
+ $('#meBar').innerHTML=`<span class="av" id="meAv" style="--c:${me.color}">${esc(initials(me.name))}<span class="dot ${net==='online'?'on':''}" style="border-color:var(--panel2)"></span></span>
+  <button class="who" data-act="copy" data-v="${me.code}" title="Copy your friend code"><b>${esc(me.name)}</b><span>Code ${me.code}</span></button>
+  ${inCall?`<button class="ib ${micOff?'off':''}" data-act="mic" aria-label="${micOff?'Unmute':'Mute'}">${ic(micOff?'micoff':'mic')}</button><button class="ib ${media.deaf?'off':''}" data-act="deaf" aria-label="${media.deaf?'Undeafen':'Deafen'}">${ic(media.deaf?'headoff':'head')}</button>`:''}
+  <button class="ib" data-act="settings" aria-label="Settings">${ic('gear')}</button>`;
+}
+function renderCallBar(){
+ const b=$('#callBar');if(!room){b.hidden=true;return}
+ b.hidden=false;b.innerHTML=`<div class="lbl"><b>In a call</b><span>${esc(room.label)}</span></div>
+  ${callVisible&&!isMobile()?'':`<button class="sq" data-act="open-call" aria-label="Open call">${ic('open')}</button>`}
+  <button class="sq red" data-act="leave" aria-label="Leave call">${ic('hang')}</button>`;
+}
+function headBack(){return `<button class="ib back" data-act="back" aria-label="Back">${ic('back')}</button>`}
+function renderPage(){
+ const pg=$('#page');
+ const keep={};pg.querySelectorAll('input[id]').forEach(i=>keep[i.id]={v:i.value,f:document.activeElement===i});
+ const dl=$('#dmList');const wasBottom=!dl||dl.scrollHeight-dl.scrollTop-dl.clientHeight<80;
+ if(view.kind==='dm'){
+  const f=friendBy(view.code);if(!f){view={kind:'home'};return renderPage()}
+  const list=dms[f.code]||[];let last=null,html='';
+  list.forEach(m=>{const who=m.me?'me':'them';const first=who!==last;last=who;const n=m.me?me.name:f.name,c=m.me?me.color:f.color;
+   html+=`<div class="msg ${first?'first':''}">${first?avHtml(n,c):'<span class="gap"></span>'}<div class="bd">${first?`<div class="hd">${esc(n)}<time>${tm(m.t)}</time></div>`:''}<div class="tx ${m.wait?'wait':''}">${esc(m.text)}</div></div></div>`});
+  pg.innerHTML=`<div class="phead">${headBack()}${avHtml(f.name,f.color,'',isOnline(f.code))}<div class="t"><h2>${esc(f.name)}</h2><span>${isOnline(f.code)?'Online':'Offline'}</span></div>
+   <button class="ib" data-act="call" data-v="${f.code}" aria-label="Voice call ${esc(f.name)}" title="Voice call">${ic('call')}</button>
+   <button class="ib" data-act="vcall" data-v="${f.code}" aria-label="Video call ${esc(f.name)}" title="Video call">${ic('cam')}</button></div>
+   <div id="dmList">${html||`<div class="card" style="margin-top:12px"><h3>This is the start of your messages with ${esc(f.name)}</h3><p>Messages go straight between your devices. If they're offline, yours wait and send when they're back.</p></div>`}</div>
+   <div class="composer"><input id="dmInput" placeholder="Message ${esc(f.name)}" maxlength="2000" autocomplete="off"><button data-act="dm-send" aria-label="Send">${ic('send')}</button></div>`;
+  if(unread[f.code]){delete unread[f.code];renderRail();renderSide();updateTitle()}
+ }else if(view.kind==='space'){
+  const s=spaces.find(x=>x.code===view.code);if(!s){view={kind:'home'};return renderPage()}
+  const ms=spaceMembers(s.code),inIt=room&&room.code===s.code;
+  pg.innerHTML=`<div class="phead">${headBack()}<span class="av" style="--c:${s.color}">${esc(initials(s.name))}</span><div class="t"><h2>${esc(s.name)}</h2><span>Space code ${s.code}</span></div></div>
+   <div class="pbody"><div class="wrap">
+    <div class="card"><h3>Voice room</h3><p>${ms===null?'Checking who\'s here…':ms.length?`${ms.length} in the call right now`:'Nobody\'s in the call yet.'}</p>
+     ${ms&&ms.length?`<div class="row">${ms.map(m=>`<span style="display:flex;align-items:center;gap:6px">${avHtml(m.name,m.color,'sm')}${esc(m.name)}</span>`).join('')}</div>`:''}
+     <div class="row"><button class="btn go" data-act="join-space" data-v="${s.code}">${ic('head')}${inIt?'Open call':'Join call'}</button></div></div>
+    <div class="card"><h3>Invite people</h3><p>Anyone with this code can join the call from a computer or phone.</p>
+     <div class="row"><span class="code">${s.code}</span></div>
+     <div class="row"><button class="btn" data-act="copy" data-v="${s.code}">${ic('copy')}Copy code</button><button class="btn" data-act="share-space" data-v="${s.code}">${ic('share')}Share invite link</button></div></div>
+    <button class="btn ghost" data-act="remove-space" data-v="${s.code}">${ic('trash')}Remove this space from my list</button>
+   </div></div>`;
+ }else{
+  const fs=friendSorted(),on=fs.filter(f=>isOnline(f.code)),off=fs.filter(f=>!isOnline(f.code));
+  const row=f=>`<div class="frow">${avHtml(f.name,f.color,'',isOnline(f.code))}<div class="nm">${esc(f.name)}<span>${isOnline(f.code)?'Online':'Offline'}</span></div>
+   <button class="ib" data-act="go-dm" data-v="${f.code}" aria-label="Message ${esc(f.name)}">${ic('chat')}</button><button class="ib" data-act="call" data-v="${f.code}" aria-label="Call ${esc(f.name)}">${ic('call')}</button></div>`;
+  pg.innerHTML=`<div class="phead">${headBack()}<div class="t"><h2>Friends</h2><span>${on.length} online</span></div></div>
+   <div class="pbody"><div class="wrap">
+    <div class="card"><h3>Add a friend</h3><p>Type their 6-character friend code. Yours is <b>${me.code}</b>.</p>
+     <div class="row"><input class="field" id="addInput" placeholder="Friend code" maxlength="40" autocomplete="off" autocapitalize="characters"><button class="btn pri" data-act="add-friend">Send request</button></div>
+     <div class="row"><button class="btn" data-act="copy" data-v="${me.code}">${ic('copy')}Copy my code</button><button class="btn" data-act="share-me">${ic('share')}Share my add link</button></div></div>
+    ${requests.length?`<div class="card"><h3>Friend requests</h3>${requests.map(r=>`<div class="frow">${avHtml(r.name,r.color||COLORS[6])}<div class="nm">${esc(r.name)}<span>Code ${r.code}</span></div><button class="btn ghost" data-act="decline-req" data-v="${r.code}">Ignore</button><button class="btn go" data-act="accept-req" data-v="${r.code}">Accept</button></div>`).join('')}</div>`:''}
+    ${outgoing.length?`<div class="card"><h3>Waiting for them to accept</h3>${outgoing.map(c=>`<div class="frow"><span class="av" style="--c:${COLORS[6]}">?</span><div class="nm">${c}<span>${isOnline(c)?'Request delivered':'Sends when they\'re online'}</span></div><button class="btn ghost" data-act="cancel-out" data-v="${c}">Cancel</button></div>`).join('')}</div>`:''}
+    <div class="card"><h3>Online</h3>${on.length?on.map(row).join(''):'<p class="empty">Nobody\'s online right now.</p>'}</div>
+    ${off.length?`<div class="card"><h3>Offline</h3>${off.map(row).join('')}</div>`:''}
+    ${!fs.length?`<div class="card"><h3>Want to join a room instead?</h3><p>Got a room code from someone? Hop straight in, no friend request needed.</p><div class="row"><button class="btn go" data-act="open-add">${ic('plus')}Join with a code</button></div></div>`:''}
+   </div></div>`;
+ }
+ Object.entries(keep).forEach(([id,k])=>{const i=document.getElementById(id);if(i){i.value=k.v;if(k.f)i.focus()}});
+ const nl=$('#dmList');if(nl&&wasBottom)nl.scrollTop=nl.scrollHeight;
+}
+function updateTitle(){const n=totalUnread()+requests.length;document.title=(n?`(${n}) `:'')+'RJ\'s Holler'}
+function renderAll(){if(!me)return;renderRail();renderSide();renderPage();renderMeBar();renderCallBar();updateTitle();if(room)renderControls()}
+function go(v,openMain=true){
+ view=v;if(callVisible&&!isMobile())hideCall();else if(callVisible)hideCall();
+ paneMain=openMain;document.body.classList.toggle('pane-main',paneMain);
+ renderAll();if(v.kind==='space')peekSpace(v.code);
+ if(v.kind==='dm'&&!isMobile())setTimeout(()=>{const i=$('#dmInput');i&&i.focus()},30);
+}
+
+/* ---------- modals ---------- */
+function modal(html,sticky){
+ const r=$('#modalRoot');r.innerHTML=`<div class="mback" ${sticky?'':'data-close'}><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`;
+ const first=r.querySelector('input,button.pri,button.go');first&&setTimeout(()=>first.focus(),30);
+}
+function closeModal(){$('#modalRoot').innerHTML=''}
+$('#modalRoot').addEventListener('click',e=>{if(e.target.matches('[data-close]'))closeModal()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#modalRoot').innerHTML&&!ringing)closeModal()});
+function openAdd(){
+ modal(`<h2>Add or join</h2><p class="lead">Join a call with a room code, start your own space, or add a friend.</p>
+  <div class="card"><h3>Join with a room code</h3><p>Paste a room code or invite link.</p>
+   <div class="row"><input class="field" id="mJoin" placeholder="Room code or link" maxlength="200" autocomplete="off" autocapitalize="characters"></div>
+   <div class="row"><button class="btn go" data-act="m-join-now">${ic('head')}Join call</button><button class="btn" data-act="m-save-space">Save as a space</button></div></div>
+  <div class="card"><h3>Create a space</h3><p>A space is a call room with a permanent code your group can always come back to.</p>
+   <div class="row"><input class="field" id="mSpace" placeholder="Space name, like Game Night" maxlength="32" autocomplete="off"><button class="btn pri" data-act="m-create-space">Create</button></div></div>
+  <div class="card"><h3>Add a friend</h3><p>Your code is <b>${me.code}</b>.</p>
+   <div class="row"><input class="field" id="mFriend" placeholder="Their friend code" maxlength="40" autocomplete="off" autocapitalize="characters"><button class="btn pri" data-act="m-add-friend">Send request</button></div></div>
+  <div class="mfoot"><button class="btn ghost" data-act="close-modal">Close</button></div>`);
+}
+function openSettings(){
+ let pick=me.color;
+ modal(`<h2>Your profile</h2><p class="lead">This is how you show up to friends and in calls.</p>
+  <div class="card"><h3>Display name</h3><div class="row"><input class="field" id="sName" maxlength="32" value="${esc(me.name)}" autocomplete="off"></div>
+   <h3 style="margin-top:14px">Color</h3><div class="swatches" id="sSw">${COLORS.map(c=>`<button class="sw ${c===pick?'on':''}" style="--c:${c}" data-c="${c}" aria-label="Color ${c}"></button>`).join('')}</div></div>
+  <div class="card"><h3>Your friend code</h3><div class="row"><span class="code">${me.code}</span></div><div class="row"><button class="btn" data-act="copy" data-v="${me.code}">${ic('copy')}Copy</button><button class="btn" data-act="share-me">${ic('share')}Share add link</button></div></div>
+  <div class="mfoot"><button class="btn ghost" data-act="close-modal">Cancel</button><button class="btn pri" id="sSave">Save</button></div>`);
+ $('#sSw').onclick=e=>{const b=e.target.closest('.sw');if(!b)return;pick=b.dataset.c;$('#sSw').querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x===b))};
+ $('#sSave').onclick=()=>{const n=clip($('#sName').value);if(!n){toast('Pick a name first.');return}me.name=n;me.color=pick;save();
+  Object.keys(fconns).forEach(c=>sendF(c,{t:'hi',name:me.name,color:me.color}));if(room){sendState()}closeModal();renderAll()};
+}
+function openInvite(){
+ if(!room)return;const on=friendSorted().filter(f=>isOnline(f.code));
+ modal(`<h2>Invite to this call</h2><p class="lead">Room code <b>${room.code}</b> works on any computer or phone.</p>
+  <div class="row"><button class="btn" data-act="copy-room">${ic('copy')}Copy code</button><button class="btn" data-act="share-room">${ic('share')}Share link</button></div>
+  <div class="card"><h3>Ring a friend</h3>${on.length?on.map(f=>`<div class="frow">${avHtml(f.name,f.color,'',true)}<div class="nm">${esc(f.name)}</div>${room.members.has(PRE_U+f.code)?'<span class="chip">In call</span>':`<button class="btn go" data-act="ring-friend" data-v="${f.code}">${ic('call')}Ring</button>`}</div>`).join(''):'<p class="empty">None of your friends are online right now.</p>'}</div>
+  <div class="mfoot"><button class="btn ghost" data-act="close-modal">Done</button></div>`);
+}
+function newSpace(name,code){
+ code=code||randCode();
+ if(!spaces.find(s=>s.code===code))spaces.push({name:clip(name)||('Room '+code),code,color:COLORS[spaces.length%COLORS.length]});
+ save();go({kind:'space',code});
+}
+
+/* ---------- actions ---------- */
+async function callFriend(code,video){
+ const f=friendBy(code);if(!f)return;
+ if(!isOnline(code)){toast(`${f.name} is offline right now. Leave a message and they'll see it when they're back.`);return}
+ const rc=randCode();
+ if(await joinRoom(rc,'Call with '+f.name,{ringing:code})){sendF(code,{t:'ring',room:rc});renderStageNote();if(video)toggleCam()}
+}
+const A={
+ 'go-home':()=>go({kind:'home'},!isMobile()?true:false),
+ 'go-friends':()=>go({kind:'home'},true),
+ 'go-dm':v=>{closeModal();go({kind:'dm',code:v},true)},
+ 'go-space':v=>go({kind:'space',code:v},!isMobile()),
+ 'go-space-page':v=>go({kind:'space',code:v},true),
+ 'back':()=>{paneMain=false;document.body.classList.remove('pane-main');renderSide()},
+ 'open-add':openAdd,'settings':openSettings,'close-modal':closeModal,
+ 'copy':v=>copy(v,'Copied '+v),
+ 'copy-room':()=>room&&copy(room.code,'Room code copied'),
+ 'share-room':()=>room&&share('Join my call on RJ\'s Holler',baseUrl()+'?room='+room.code),
+ 'share-space':v=>share('Join my space on RJ\'s Holler',baseUrl()+'?room='+v),
+ 'share-me':()=>share('Add me on RJ\'s Holler',baseUrl()+'?add='+me.code),
+ 'add-friend':()=>{const i=$('#addInput');if(addFriend(i.value))i.value=''},
+ 'accept-req':v=>{acceptReq(v);const f=friendBy(v);if(f)toast(`You and ${f.name} are now friends`)},
+ 'decline-req':v=>{requests=requests.filter(r=>r.code!==v);renderAll()},
+ 'cancel-out':v=>{outgoing=outgoing.filter(c=>c!==v);save();renderAll()},
+ 'dm-send':()=>{const i=$('#dmInput');if(!i)return;const t=i.value;i.value='';sendDM(view.code,t);setTimeout(()=>{const n=$('#dmInput');n&&n.focus()},0)},
+ 'call':v=>callFriend(v,false),'vcall':v=>callFriend(v,true),
+ 'join-space':v=>{const s=spaces.find(x=>x.code===v);joinRoom(v,s?s.name:null)},
+ 'remove-space':v=>{spaces=spaces.filter(s=>s.code!==v);save();go({kind:'home'},false)},
+ 'open-call':()=>showCall(),'hide-call':()=>{hideCall();renderAll()},
+ 'leave':()=>leaveRoom(),
+ 'mic':toggleMic,'deaf':toggleDeaf,'cam':toggleCam,'flip':flipCam,'screen':toggleScreen,
+ 'invite':openInvite,
+ 'ring-friend':v=>{if(room&&sendF(v,{t:'ring',room:room.code})){const f=friendBy(v);toast(`Ringing ${f.name}`)}closeModal()},
+ 'toggle-chat':()=>{const c=$('#callChat');c.hidden=!c.hidden;if(!c.hidden&&room){room.chatUnread=0;renderChat();setTimeout(()=>{if(!isMobile())$('#ccInput').focus()},30)}renderControls();requestAnimationFrame(layoutGrid)},
+ 'cc-send':sendCallChat,
+ 'unlock-sound':()=>{document.querySelectorAll('#grid video').forEach(v=>v.play().catch(()=>{}));$('#soundUnlock').hidden=true;try{media.ctx&&media.ctx.resume()}catch(e){}},
+ 'ring-accept':async()=>{if(!ringing)return;const {code,room:rc}=ringing;stopRinging();const f=friendBy(code);await joinRoom(rc,'Call with '+(f?f.name:'a friend'))},
+ 'ring-decline':()=>{if(!ringing)return;sendF(ringing.code,{t:'decline'});stopRinging()},
+ 'm-join-now':async()=>{const c=cleanCode($('#mJoin').value);if(c.length<4){toast('Enter a room code first.');return}closeModal();const s=spaces.find(x=>x.code===c);await joinRoom(c,s?s.name:null)},
+ 'm-save-space':()=>{const c=cleanCode($('#mJoin').value);if(c.length<4){toast('Enter a room code first.');return}closeModal();newSpace('Room '+c,c)},
+ 'm-create-space':()=>{const n=clip($('#mSpace').value);if(!n){toast('Give your space a name.');return}closeModal();newSpace(n)},
+ 'm-add-friend':()=>{if(addFriend($('#mFriend').value))closeModal()},
+ 'url-join':async v=>{closeModal();const s=spaces.find(x=>x.code===v);await joinRoom(v,s?s.name:null)},
+ 'url-save':v=>{closeModal();newSpace('Room '+v,v)},
+ 'url-add':v=>{closeModal();addFriend(v);go({kind:'home'},true)}
+};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const f=A[b.dataset.act];if(f){e.preventDefault();f(b.dataset.v,b)}});
+document.addEventListener('keydown',e=>{
+ if(e.key!=='Enter'||e.shiftKey)return;const id=e.target.id;
+ const map={dmInput:'dm-send',ccInput:'cc-send',addInput:'add-friend',mJoin:'m-join-now',mSpace:'m-create-space',mFriend:'m-add-friend'};
+ if(map[id]){e.preventDefault();A[map[id]]()}
+});
+window.addEventListener('focus',()=>{if(view.kind==='dm'&&unread[view.code]){delete unread[view.code];renderAll()}});
+
+function handleUrl(){
+ if(urlHandled)return;urlHandled=true;
+ const q=new URLSearchParams(location.search);
+ const rc=cleanCode(q.get('room')||''),ad=cleanCode(q.get('add')||'');
+ if(rc.length>=4){modal(`<h2>Join room ${rc}?</h2><p class="lead">You'll join with your mic on and camera off. You can change either once you're in.</p>
+  <div class="mfoot"><button class="btn ghost" data-act="close-modal">Not now</button><button class="btn" data-act="url-save" data-v="${rc}">Save as a space</button><button class="btn go" data-act="url-join" data-v="${rc}">Join call</button></div>`)}
+ else if(ad.length===6&&ad!==me.code&&!isFriend(ad)){modal(`<h2>Add friend ${ad}?</h2><p class="lead">They'll get a friend request next time you're both online.</p>
+  <div class="mfoot"><button class="btn ghost" data-act="close-modal">Not now</button><button class="btn pri" data-act="url-add" data-v="${ad}">Send request</button></div>`)}
+ if(rc||ad)try{history.replaceState(null,'',baseUrl())}catch(e){}
+}
+
+/* ---------- onboarding + boot ---------- */
+function onboard(){
+ let pick=COLORS[Math.floor(Math.random()*COLORS.length)];
+ const d=document.createElement('div');d.className='onboard';
+ d.innerHTML=`<div class="box"><div class="logo">${LOGO}</div><h1>RJ's Holler</h1><p>Call friends, hop into rooms with a code, share your screen, and chat. Works on computers and phones.</p>
+  <input class="field" id="obName" placeholder="Your display name" maxlength="32" autocomplete="off">
+  <div class="swatches" id="obSw" style="margin-top:14px">${COLORS.map(c=>`<button class="sw ${c===pick?'on':''}" style="--c:${c}" data-c="${c}" aria-label="Color ${c}"></button>`).join('')}</div>
+  <div class="row" style="margin-top:20px"><button class="btn pri" id="obGo" style="padding:12px 22px">Start hollering</button></div></div>`;
+ document.body.appendChild(d);setTimeout(()=>$('#obName').focus(),50);
+ d.querySelector('#obSw').onclick=e=>{const b=e.target.closest('.sw');if(!b)return;pick=b.dataset.c;d.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x===b))};
+ const goOn=()=>{const n=clip($('#obName').value);if(!n){toast('Pick a name people will see.');return}me={name:n,code:randCode(),color:pick};save();d.remove();start()};
+ d.querySelector('#obGo').onclick=goOn;$('#obName').onkeydown=e=>{if(e.key==='Enter')goOn()};
+}
+function start(){
+ fillIcons(document);renderAll();
+ if(typeof Peer==='undefined'){setNet('connecting');$('#netBanner').textContent='Couldn\'t load the calling library. Check your internet connection and reload.';return}
+ startPeer();setInterval(presenceTick,10000);
+}
+(async()=>{
+ const d=await store.get('holler-data');
+ if(d&&d.me&&d.me.code){me=d.me;friends=d.friends||[];dms=d.dms||{};spaces=d.spaces||[];outgoing=d.outgoing||[]}
+ fillIcons(document);
+ if(!me)onboard();else start();
+})();
+</script>
+</body>
+</html>
