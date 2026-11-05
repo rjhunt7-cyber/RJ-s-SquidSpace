@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>RJ's Squid Space</title>
 <meta name="description" content="Free tools and software you can use right in your browser.">
 <meta name="theme-color" content="#082848">
@@ -783,6 +783,32 @@ html.has-pseudo-fs, html.has-pseudo-fs body { overflow: hidden; }
 ::selection { background: var(--coin); color: var(--ink); }
 @media (max-width: 800px) { .marquee__inner { min-height: 196px; } }   /* room for the squid under the online box */
 
+
+/* ==========================================================================
+   Phones and tablets: a tool fills the screen and lays itself out
+   ========================================================================== */
+.stage.is-fill { background: var(--night); }
+html.is-phone .arcade { padding: 0 0 12px; gap: 0; }
+html.is-phone .cabinet { align-items: stretch; }
+html.is-phone .stage { margin: 0; max-width: 100%; box-shadow: none; }
+html.is-phone .controls { margin-top: 10px; gap: 12px; }
+html.is-phone .btn--fullscreen { min-width: 0; flex: 1 1 auto; max-width: 420px; }
+html.is-phone .cabinet__desc { margin: 14px 16px 0; }
+html.is-phone body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+/* fullscreen: the real screen size (dvh follows the browser bars on iPhone), kept clear of notches */
+.stage:fullscreen { padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
+.stage:-webkit-full-screen { padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
+.stage.is-pseudo-fs {
+  height: 100vh !important; height: 100dvh !important;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+/* phones have no Esc key, so the exit button stays on screen: small, see-through, in the corner */
+html.is-touchy .stage__exit {
+  top: calc(10px + env(safe-area-inset-top, 0px)); right: calc(10px + env(safe-area-inset-right, 0px));
+  min-height: 40px; min-width: 40px; padding: 0 10px; opacity: 0.72; justify-content: center;
+}
+html.is-touchy .stage__exit-label { display: none; }
+html.is-touchy .stage__exit:active { opacity: 1; }
 </style>
 </head>
 <body>
@@ -845,7 +871,7 @@ html.has-pseudo-fs, html.has-pseudo-fs body { overflow: hidden; }
     <section class="cabinet" id="cabinet" aria-labelledby="game-title">
       <div class="stage" id="stage">
         <div class="stage__box" id="stage-box"></div>
-        <button class="btn px stage__exit" type="button" id="exit-fs" hidden><span data-icon="fullscreen-exit"></span>Exit fullscreen</button>
+        <button class="btn px stage__exit" type="button" id="exit-fs" aria-label="Exit fullscreen" hidden><span data-icon="fullscreen-exit"></span><span class="stage__exit-label">Exit fullscreen</span></button>
         <div class="stage__msg" id="stage-msg">
           <div class="state">
             <div class="state__rj loading-rj" data-rj="skate" data-rj-live></div>
@@ -1300,8 +1326,27 @@ html.has-pseudo-fs, html.has-pseudo-fs body { overflow: hidden; }
 
     function isFullscreen() { return pseudoFs || (document.fullscreenElement || document.webkitFullscreenElement) === stage; }
 
+    // phones and tablets (no mouse): a tool made for phones gets the whole screen
+    var touchy = !!(window.matchMedia && matchMedia('(any-pointer: coarse)').matches && !matchMedia('(any-hover: hover)').matches);
+    var aware = null;                     // does the tool have its own phone layout (a viewport tag)? null = not known yet
+    function px(v) { return parseFloat(v) || 0; }
+    function smallScreen() { return touchy || window.innerWidth <= 640; }
+    // 'fill' = the tool gets the whole screen and lays itself out. 'desktop' = a computer-only tool, shown as a scaled computer page.
+    function phoneKind() {
+      if (!game || !smallScreen()) return '';
+      if (game.phone === 'fill' || game.phone === 'desktop') return game.phone;
+      return aware === false ? 'desktop' : 'fill';
+    }
     function available() {
-      if (isFullscreen()) return { w: stage.clientWidth, h: stage.clientHeight };
+      if (isFullscreen()) {
+        var cs = getComputedStyle(stage);
+        return { w: stage.clientWidth - px(cs.paddingLeft) - px(cs.paddingRight), h: stage.clientHeight - px(cs.paddingTop) - px(cs.paddingBottom) };
+      }
+      if (phoneKind()) {                  // the width of the screen, and the height that's left under the top bar
+        var vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        var t = stage.getBoundingClientRect().top + window.scrollY;
+        return { w: Math.max(200, cabinet.clientWidth), h: Math.max(260, Math.round(vh - t - controls.offsetHeight - 24)) };
+      }
       var w = cabinet.clientWidth - 40;
       var top = stage.getBoundingClientRect().top + window.scrollY;
       var h = window.innerHeight - top - 16 - (controls.offsetHeight + 40 + 24);
@@ -1310,7 +1355,29 @@ html.has-pseudo-fs, html.has-pseudo-fs body { overflow: hidden; }
     function layout() {
       queued = false;
       if (!game || !stage.getClientRects().length) return;
+      var kind = phoneKind();
+      document.documentElement.classList.toggle('is-phone', smallScreen());
+      document.documentElement.classList.toggle('is-touchy', touchy);
+      stage.classList.toggle('is-fill', kind === 'fill');
       var av = available();
+      if (kind === 'fill' || (kind === 'desktop' && !zoom)) {
+        // no black bars: the tool is as big as the screen, so its own phone layout (or a scaled computer page) fills it
+        var fw = Math.max(1, Math.floor(av.w)), fh = Math.max(1, Math.floor(av.h));
+        if (isFullscreen()) { stage.style.width = ''; stage.style.height = ''; }
+        else { stage.style.width = fw + 'px'; stage.style.height = fh + 'px'; }
+        box.style.width = fw + 'px'; box.style.height = fh + 'px';
+        if (!frame) return;
+        if (kind === 'desktop' && fw < 1100) {
+          var sc = fw / 1100;
+          frame.style.width = '1100px'; frame.style.height = Math.ceil(fh / sc) + 'px';
+          frame.style.transform = 'scale(' + sc.toFixed(4) + ')';
+          stage.classList.add('is-zoomed');
+        } else {
+          frame.style.width = ''; frame.style.height = ''; frame.style.transform = '';
+          stage.classList.remove('is-zoomed');
+        }
+        return;
+      }
       var ratio = zoom ? zoom.w / zoom.h : game.aspect || Math.min(16 / 9, Math.max(4 / 3, av.w / av.h));
       var w = av.w, h = Math.round(av.w / ratio);
       if (h > av.h) { h = av.h; w = Math.round(av.h * ratio); }
@@ -1355,8 +1422,16 @@ html.has-pseudo-fs, html.has-pseudo-fs body { overflow: hidden; }
         if (m.sw > zoom.w + 1 || m.sh > zoom.h + 1) { zoom = { w: Math.min(2560, Math.max(zoom.w, m.sw)), h: Math.min(1600, Math.max(zoom.h, m.sh)) }; layout(); }
       }, 150);
     }
+    // does the tool bring its own phone layout? (tools made for phones carry a viewport tag)
+    function checkAware() {
+      var doc = gameDoc();
+      if (!doc) return;
+      var found = false, metas = doc.getElementsByTagName('meta');
+      for (var i = 0; i < metas.length; i++) if ((metas[i].getAttribute('name') || '').toLowerCase() === 'viewport') found = true;
+      if (found !== aware) { aware = found; requestLayout(); }
+    }
     function autoFit() {
-      if (zoom || !game || game.fit === 'resize') return;
+      if (zoom || !game || game.fit === 'resize' || phoneKind() === 'fill') return;
       var doc = gameDoc();
       if (!doc) return;
       var m = measure(doc), c = largestCanvas(doc);
@@ -1442,7 +1517,7 @@ html.has-pseudo-fs, html.has-pseudo-fs body { overflow: hidden; }
     function wake() {
       stage.classList.remove('is-idle');
       clearTimeout(idleTimer);
-      if (isFullscreen()) idleTimer = setTimeout(function () { stage.classList.add('is-idle'); }, 2600);
+      if (isFullscreen() && !touchy) idleTimer = setTimeout(function () { stage.classList.add('is-idle'); }, 2600);
     }
     fsBtn.addEventListener('click', function () { blip(); if (isFullscreen()) exitFullscreen(); else enterFullscreen(); });
     exitBtn.addEventListener('click', exitFullscreen);
@@ -1470,7 +1545,7 @@ html.has-pseudo-fs, html.has-pseudo-fs body { overflow: hidden; }
       clearTimeout(fitTimer); clearTimeout(loadTimer);
       if (isFullscreen()) exitFullscreen();
       if (frame) { try { frame.src = 'about:blank'; } catch (e) { /* ignore */ } frame.remove(); }
-      frame = null; game = null; zoom = null; frameReady = false;
+      frame = null; game = null; zoom = null; frameReady = false; aware = null;
       if (problem) { problem.remove(); problem = null; }
       stage.hidden = false; controls.hidden = false; fsBtn.hidden = true; descEl.hidden = true;
       msg.innerHTML = LOADING; msg.hidden = false; paint(msg);
@@ -1479,6 +1554,7 @@ html.has-pseudo-fs, html.has-pseudo-fs body { overflow: hidden; }
 
     function start(g) {
       game = Object.assign({}, g);
+      aware = null;
       if (typeof game.aspect === 'string') { var p = game.aspect.split(/[:/x]/); game.aspect = p.length === 2 ? +p[0] / +p[1] : +game.aspect; }
       if (!(game.aspect > 0.3 && game.aspect < 5)) game.aspect = 0;
       if (game.width > 0 && game.height > 0 && game.fit !== 'resize') zoom = { w: +game.width, h: +game.height };
@@ -1495,6 +1571,7 @@ html.has-pseudo-fs, html.has-pseudo-fs body { overflow: hidden; }
         frameReady = true;
         msg.hidden = true;
         guardKeys(); focusGame();
+        checkAware(); setTimeout(checkAware, 400);
         setTimeout(autoFit, 300); setTimeout(autoFit, 1500);
       });
       box.appendChild(frame);
@@ -1518,6 +1595,8 @@ html.has-pseudo-fs, html.has-pseudo-fs body { overflow: hidden; }
     }
 
     window.addEventListener('resize', requestLayout);
+    window.addEventListener('orientationchange', function () { setTimeout(requestLayout, 120); setTimeout(requestLayout, 450); });
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', requestLayout);
     window.addEventListener('gamekade:layout', requestLayout);
     if (window.ResizeObserver) new ResizeObserver(requestLayout).observe(cabinet);
     return { open: open, close: reset };
@@ -2066,6 +2145,7 @@ html.has-pseudo-fs, html.has-pseudo-fs body { overflow: hidden; }
           '<p class="owner-picked" id="o-picked"></p>' +
           '<label class="field">Name<input type="text" id="o-title" maxlength="80"></label>' +
           '<label class="field">Short description (optional)<input type="text" id="o-desc" maxlength="300"></label>' +
+          '<label class="field">On phones<select id="o-phone">' + [['', 'Automatic (fills the screen if the tool is made for phones)'], ['fill', 'Always fill the screen (made for phones)'], ['desktop', 'Show the computer layout (made for computers)']].map(function (o) { return '<option value="' + o[0] + '">' + o[1] + '</option>'; }).join('') + '</select></label>' +
           '<div class="owner-preview">' +
             '<div class="owner-preview__frame" id="o-preview"></div>' +
             '<div class="owner-preview__side">' +
@@ -2163,6 +2243,7 @@ html.has-pseudo-fs, html.has-pseudo-fs body { overflow: hidden; }
         '<div>' +
           '<label class="field">Name<input type="text" data-k="title" maxlength="80" value="' + esc(g.title) + '"></label>' +
           '<label class="field">Short description (optional)<input type="text" data-k="description" maxlength="300" value="' + esc(g.description || '') + '"></label>' +
+          '<label class="field">On phones<select data-k="phone">' + [['', 'Automatic (fills the screen if the tool is made for phones)'], ['fill', 'Always fill the screen (made for phones)'], ['desktop', 'Show the computer layout (made for computers)']].map(function (o) { return '<option value="' + o[0] + '"' + ((g.phone || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>' +
           '<div class="owner-row">' +
             '<button class="btn px btn--small" type="button" data-act="save">Save changes</button>' +
             '<button class="btn px btn--small btn--quiet" type="button" data-act="pic">New picture</button>' +
@@ -2180,6 +2261,7 @@ html.has-pseudo-fs, html.has-pseudo-fs body { overflow: hidden; }
     $('o-picked').textContent = 'Picked: ' + label;
     $('o-title').value = title;
     $('o-desc').value = '';
+    $('o-phone').value = '';
     setPicture(null);
     say($('o-add-msg'), '');
   }
@@ -2225,7 +2307,7 @@ html.has-pseudo-fs, html.has-pseudo-fs body { overflow: hidden; }
 
   function addTool() {
     var msg = $('o-add-msg');
-    var title = $('o-title').value.trim(), description = $('o-desc').value.trim();
+    var title = $('o-title').value.trim(), description = $('o-desc').value.trim(), phone = $('o-phone').value;
     if (!pending) return;
     if (!title) { say(msg, 'Give the tool a name first.', true); return; }
     work(msg, async function () {
@@ -2255,6 +2337,7 @@ html.has-pseudo-fs, html.has-pseudo-fs body { overflow: hidden; }
         var entry = { id: id, title: title, path: encodePath(path), kind: job.kind, added: new Date().toISOString() };
         if (description) entry.description = description;
         if (thumb) entry.thumbnail = thumb;
+        if (phone) entry.phone = phone;
         list.push(entry);
       }, 'List tool: ' + title);
       clearNew();
@@ -2301,11 +2384,11 @@ html.has-pseudo-fs, html.has-pseudo-fs body { overflow: hidden; }
       if (!tool) return;
       var act = btn.getAttribute('data-act');
       if (act === 'save') {
-        var title = li.querySelector('[data-k=title]').value.trim(), desc = li.querySelector('[data-k=description]').value.trim();
+        var title = li.querySelector('[data-k=title]').value.trim(), desc = li.querySelector('[data-k=description]').value.trim(), phone = li.querySelector('[data-k=phone]').value;
         if (!title) { say(msg, 'A tool needs a name.', true); return; }
         work(msg, async function () {
           say(msg, 'Saving…');
-          await changeList(function (list) { list.forEach(function (g) { if (g.id === id) { g.title = title; if (desc) g.description = desc; else delete g.description; } }); }, 'Update tool: ' + title);
+          await changeList(function (list) { list.forEach(function (g) { if (g.id === id) { g.title = title; if (desc) g.description = desc; else delete g.description; if (phone) g.phone = phone; else delete g.phone; } }); }, 'Update tool: ' + title);
           renderList();
           say(document.querySelector('.owner-game[data-id="' + id + '"] [data-msg]'), 'Saved. Squid Space updates in about a minute.');
         });
