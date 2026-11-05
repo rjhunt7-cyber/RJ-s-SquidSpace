@@ -204,6 +204,7 @@ h1,h2,h3{font-weight:800;letter-spacing:-.01em;line-height:1.15}
 .rail-mode{width:56px;padding:6px 0;border-radius:14px;color:#8DA9C4;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:700;flex-shrink:0;margin-top:auto}
 .rail-mode:hover{color:#EEF4FA;background:#16345E}
 .rail-mode svg{width:22px;height:22px}
+.rail-mode+.rail-mode{margin-top:0}
 .onboard .logo svg{width:84px;height:84px}
 .onboard h1{font-size:clamp(34px,8vw,52px);margin:14px 0 6px}
 .onboard p{color:#BFD3E8}
@@ -928,6 +929,7 @@ function renderRail(){
  <div class="rail-sep"></div>
  ${spaces.map(s=>`<button class="rail-btn ${view.kind==='space'&&view.code===s.code?'on':''} ${room&&room.code===s.code?'live':''}" data-act="go-space" data-v="${s.code}" title="${esc(s.name)}" aria-label="${esc(s.name)}" style="--c:${s.color}">${esc(initials(s.name))}</button>`).join('')}
  <button class="rail-btn add" data-act="open-add" aria-label="Add a friend, join a room, or create a space" title="Add a friend, join a room, or create a space">${ic('plus')}</button>
+ ${framed?`<button class="rail-mode" data-act="fill" title="${fillLabel()}">${ic('expand')}${!sameOrigin?'Pop out':filled?'Shrink':'Fill'}</button>`:''}
  <button class="rail-mode" data-act="mode" data-v="mobile" title="Switch to mobile mode">${ic('phone')}Mobile</button>`;
 }
 function friendSorted(){return [...friends].sort((a,b)=>(isOnline(b.code)-isOnline(a.code))||a.name.localeCompare(b.name))}
@@ -1079,6 +1081,7 @@ const A={
  'go-space':v=>go({kind:'space',code:v},!isMobile()),
  'go-space-page':v=>go({kind:'space',code:v},true),
  'back':()=>{paneMain=false;document.body.classList.remove('pane-main');renderAll()},
+ 'fill':()=>{if(!sameOrigin)openFullPage();else if(filled)unfillScreen();else fillScreen()},
  'mode':v=>{closeModal();setMode(v);toast(v==='mobile'?'Mobile mode on':'Desktop mode on')},
  'm-tab':v=>{mTab=v;if(v==='spaces')spaces.forEach(x=>peekSpace(x.code));renderMShell();$('#mBody').scrollTop=0},
  'm-inline-join':async()=>{const i=$('#mJoinCode');const c=cleanCode(i&&i.value);if(c.length<4){toast('Enter a room code first.');return}const s=spaces.find(x=>x.code===c);if(await joinRoom(c,s?s.name:null)&&i)i.value=''},
@@ -1134,6 +1137,57 @@ function handleUrl(){
 }
 
 /* ---------- onboarding + boot ---------- */
+/* ---------- fill the whole screen when embedded in a website ---------- */
+const framed=(()=>{try{return window.self!==window.top}catch(e){return true}})();
+const sameOrigin=(()=>{try{return !!(framed&&window.frameElement&&parent.document&&parent.document.body)}catch(e){return false}})();
+const phoneLike=()=>matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<820;
+let filled=null;
+const fillLabel=()=>!framed?'':!sameOrigin?'Open full screen':filled?'Shrink back into the website':'Fill the whole screen';
+function fillScreen(){
+ if(!sameOrigin||filled)return false;
+ try{
+  const pd=parent.document,fe=window.frameElement;
+  const saved={els:[],meta:null,metaNew:false,metaContent:null,htmlOv:pd.documentElement.style.overflow,bodyOv:pd.body.style.overflow};
+  const keep=el=>saved.els.push([el,el.getAttribute('style')]);
+  keep(fe);
+  fe.style.cssText+=';position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;transform:none!important;z-index:2147483647!important;';
+  // wrappers with transforms/filters trap fixed elements in a box, so neutralize them while filled
+  for(let a=fe.parentElement;a&&a!==pd.documentElement;a=a.parentElement){
+   const cs=parent.getComputedStyle(a);
+   const traps=cs.transform!=='none'||cs.filter!=='none'||cs.perspective!=='none'||(cs.contain&&cs.contain!=='none')||String(cs.willChange).includes('transform')||(cs.backdropFilter&&cs.backdropFilter!=='none')||cs.zIndex!=='auto';
+   if(traps){keep(a);
+    ['transform','filter','perspective','backdrop-filter'].forEach(k=>a.style.setProperty(k,'none','important'));
+    a.style.setProperty('contain','none','important');a.style.setProperty('will-change','auto','important');
+    if(cs.zIndex!=='auto')a.style.setProperty('z-index','2147483647','important');}
+  }
+  // phones shrink pages without a viewport tag to desktop width, which makes everything tiny
+  let m=pd.querySelector('meta[name="viewport"]');
+  if(m){saved.meta=m;saved.metaContent=m.getAttribute('content')}else{m=pd.createElement('meta');m.name='viewport';pd.head.appendChild(m);saved.meta=m;saved.metaNew=true}
+  m.setAttribute('content','width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover');
+  pd.documentElement.style.overflow='hidden';pd.body.style.overflow='hidden';
+  try{parent.scrollTo(0,0)}catch(e){}
+  filled=saved;
+ }catch(e){return false}
+ refreshFill();return true;
+}
+function unfillScreen(){
+ if(!filled)return;const sv=filled;filled=null;
+ try{
+  sv.els.forEach(([el,st])=>{if(st===null)el.removeAttribute('style');else el.setAttribute('style',st)});
+  if(sv.metaNew)sv.meta.remove();else if(sv.metaContent===null)sv.meta.removeAttribute('content');else sv.meta.setAttribute('content',sv.metaContent);
+  const pd=parent.document;pd.documentElement.style.overflow=sv.htmlOv;pd.body.style.overflow=sv.bodyOv;
+ }catch(e){}
+ refreshFill();
+}
+function openFullPage(){
+ let w=null;try{w=window.open(location.href,'_blank')}catch(e){}
+ if(!w){try{window.top.location.href=location.href}catch(e){toast('Your website is blocking pop-outs. Open the app\'s own link in a new tab instead.')}}
+}
+function refreshFill(){
+ const b=$('#obFill');if(b)b.innerHTML=ic('expand')+esc(fillLabel());
+ if(me)renderAll();
+ requestAnimationFrame(layoutGrid);
+}
 function setMode(m){
  mode=m==='mobile'?'mobile':'desktop';
  document.body.classList.toggle('m',mode==='mobile');
@@ -1168,7 +1222,7 @@ function renderMShell(){
   B.innerHTML=netBox+`<div class="mme"><span class="av" style="--c:${me.color}">${esc(initials(me.name))}</span><h2>${esc(me.name)}</h2><p>Friend code <b>${me.code}</b></p></div>
    <div class="mcard"><div class="row" style="margin-top:0"><button class="btn" data-act="copy" data-v="${me.code}">${ic('copy')}Copy code</button><button class="btn" data-act="share-me">${ic('share')}Share</button></div>
    <button class="btn mbig" data-act="settings">${ic('gear')}Edit profile</button></div>
-   <div class="mcard"><h3>Layout</h3><p>Switch back to the full layout with the sidebar.</p><button class="btn pri mbig" data-act="mode" data-v="desktop">${ic('desktop')}Desktop mode</button></div>`;
+   <div class="mcard"><h3>Layout</h3><p>Switch back to the full layout with the sidebar.</p><button class="btn pri mbig" data-act="mode" data-v="desktop">${ic('desktop')}Desktop mode</button>${framed?`<button class="btn mbig" data-act="fill">${ic('expand')}${esc(fillLabel())}</button>`:''}</div>`;
  }
  const n=totalUnread()+requests.length;
  T.innerHTML=`<button class="mtab ${mTab==='chats'?'on':''}" data-act="m-tab" data-v="chats">${ic('chat')}Chats${n?`<span class="badge">${n>99?'99+':n}</span>`:''}</button>
@@ -1185,7 +1239,8 @@ function startScreen(){
   ${isNew?`<input class="field" id="obName" placeholder="Your display name" maxlength="32" autocomplete="off">
   <div class="swatches" id="obSw" style="margin-top:14px">${COLORS.map(c=>`<button class="sw ${c===pick?'on':''}" style="--c:${c}" data-c="${c}" aria-label="Color ${c}"></button>`).join('')}</div>`:''}
   <div class="modepick"><button class="mp" data-m="desktop">${ic('desktop')}Desktop mode</button><button class="mp" data-m="mobile">${ic('phone')}Mobile mode</button></div>
-  <button class="btn pri" id="obGo">${isNew?'Start hollering':'Open Holler'}</button></div>`;
+  <button class="btn pri" id="obGo">${isNew?'Start hollering':'Open Holler'}</button>
+  ${framed?`<button class="btn ghost" id="obFill" data-act="fill" style="width:100%;justify-content:center;margin-top:8px;color:#BFD3E8">${ic('expand')}${esc(fillLabel())}</button>`:''}</div>`;
  document.body.appendChild(d);
  const mark=()=>d.querySelectorAll('.mp').forEach(b=>b.classList.toggle('on',b.dataset.m===mode));mark();
  d.querySelector('.modepick').onclick=e=>{const b=e.target.closest('.mp');if(!b)return;setMode(b.dataset.m);mark()};
@@ -1206,6 +1261,7 @@ function start(){
 (async()=>{
  const d=await store.get('holler-data');
  if(d&&d.me&&d.me.code){me=d.me;friends=d.friends||[];dms=d.dms||{};spaces=d.spaces||[];outgoing=d.outgoing||[]}
+ if(framed&&sameOrigin&&phoneLike())fillScreen();
  setMode((d&&d.mode)||autoMode());
  fillIcons(document);
  startScreen();
